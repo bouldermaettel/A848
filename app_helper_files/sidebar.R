@@ -3,9 +3,7 @@ source('./app_helper_files/radioTooltips.R')
 sidebar <- dashboardSidebar(width = 300,
   sidebarMenu(id='tabs',
 
-                      conditionalPanel('input.hide > input.show',
-                                        appButton(inputId = "show", label = NULL, icon = icon("eye"))),
-              bsTooltip(id='show', 'Click to show the header', placement = "bottom", trigger = "hover",options = NULL),
+    bsTooltip(id='show', 'Click to show the header', placement = "bottom", trigger = "hover",options = NULL),
 
     menuItem("Historic", tabName = "hist", icon = icon("th")),
     menuItem("New", icon = icon('line-chart'), tabName = "new",
@@ -17,7 +15,8 @@ sidebar <- dashboardSidebar(width = 300,
     menuItem("Fuzzy duplicates", icon = icon('pushpin', lib = "glyphicon"), tabName = 'fuzzy_dups',
                 badgeLabel = "total", badgeColor = "green"),
     fileInput('file_input', 'Choose file with data to be loaded', accept = c('.csv','.xlsx')),
-              appButton(inputId = "transfer", label = "Transfer", icon = icon("save")),
+              conditionalPanel("input.tabs != `hist`",
+              appButton(inputId = "transfer", label = "Transfer", icon = icon("save"))),
     bsTooltip(id='transfer', 'Transfer new Data to database', placement = "bottom", trigger = "hover",options = NULL)
 
 ))

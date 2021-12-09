@@ -9,8 +9,6 @@ body <- dashboardBody(
   ### style the shiny notification according to the stylesheet
   tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "app.css")),
 
-  use_theme('bouldermaettel'),
-
 tabItems(
   #### Tab hist
 tabItem(tabName = "hist",
@@ -71,33 +69,8 @@ selectizeInput("columns_fuzzy",label = "Choose columns to be shown",
                choices= c("Name", "Vorname", "Strasse", "PLZ"),
                selected = c("Name", "Vorname", "Strasse", "PLZ"),
                multiple =T, options = NULL)),
- # appButton(inputId = "excel_fuzzy", label = "Save in Excel Tab", icon = icon("box"))),
 
-DTOutput("dupl_fuzzy", width = '100%' )),
-
-
-  # #### Tab NLP Playground masked word
-  #         tabItem(tabName = "nlp_masked",
-  #              box(title = h3('Masked word prediction'), width = 5,
-  #   textAreaInput("nlp_masked_word", NULL, "Matthias Müller is a [MASK].",
-  #             width = "1000px", height = '120px'),
-  #  numericInput('kwords',h4("How many words (top k)"),value=10, min= 1, max=30, step=1, width='150px'),
-  #   appButton(inputId = "predict_masked_word", label = h5("predict masked word"), icon = icon("line-chart")), # icon = icon("arrow-right", lib = "glyphicon")
-  #             br(),
-  #             br(),
-  #                  column(width=4,
-  # DTOutput('masked_word')))),
-
-#### Tab NLP Playground masked word
-          tabItem(tabName = "nlp_masked",
-               box(title = h3('Masked word prediction'), width = 5,
-    textAreaInput("nlp_masked_word", NULL, "Matthias Muller is a [MASK].",
-              width = "1000px", height = '120px'),
-   numericInput('kwords',h4("How many words (top k)"),value=10, min= 1, max=25, step=1, width='150px'),
-    appButton(inputId = "predict_masked_word", label = h5("predict masked word"), icon = icon("line-chart"))), # icon = icon("arrow-right", lib = "glyphicon")
-    box(title = NULL, width = 5,
-                   # column(width=4,
-  DTOutput('masked_word')))))
+DTOutput("dupl_fuzzy", width = '100%' ))))
 
 
 

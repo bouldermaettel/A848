@@ -1,2 +1,2 @@
 # A848
-Shiny App for data wrangling
+Shiny App for duplicate detection

@@ -30,17 +30,17 @@ ui <- function(request) {
 }
 
 server <- function(input, output, session){
-    variable <- reactiveValues()
-    data <- reactiveValues()
-    wb <- reactiveValues()
-    data$path <- './data/Vereinfachtes_Verfahren_ab_2019.xlsx'
+variable <- reactiveValues()
+data <- reactiveValues()
+wb <- reactiveValues()
+data$path <- './data/Vereinfachtes_Verfahren_ab_2019.xlsx'
 
-  source('./src/data/data_wrangler.R')
+source('./src/data/data_wrangler.R')
 
 
-  observeEvent(input$hide, {
+observeEvent(input$hide, {
 js$hidehead('none')
-  variable$head <- 'hidden'
+variable$head <- 'hidden'
 })
 
 observeEvent(input$show, {
@@ -48,9 +48,8 @@ js$hidehead('')
     variable$head <- 'not hidden'
 })
 
-
-  # adapt the max size of file-upload (the def
-  options(shiny.maxRequestSize=50000*1024^2)
+# adapt the max size of file-upload (the def
+options(shiny.maxRequestSize=50000*1024^2)
 
 # load data from database
 observe({
@@ -81,7 +80,6 @@ observe({
   observe({
     req(data$tot)
     data$tot_show <- data$tot[,input$columns_tot]
-
   })
 
 output$new_data <- renderDT({
@@ -96,53 +94,37 @@ data$tot_show %>%
            filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
-
-
 observe({
-    updateSelectizeInput(session, "columns_hist",
-               choices= colnames(data$hist),
-               selected = colnames(data$hist))
-})
+updateSelectizeInput(session, "columns_hist",
+           choices= colnames(data$hist),
+           selected = colnames(data$hist))
 
-observe({
-  updateSelectizeInput(session, "columns_new",
-             choices= colnames(data$new),
-             selected = colnames(data$new))
-})
+updateSelectizeInput(session, "columns_new",
+           choices= colnames(data$new),
+           selected = colnames(data$new))
 
-observe({
 updateSelectizeInput(session, "columns_tot",
            choices= colnames(data$tot),
            selected = colnames(data$tot))
-})
 
-  observe({
 updateSelectizeInput(session, "columns_dupl",
            choices= colnames(data$tot),
            selected = colnames(data$tot))
-})
 
-  observe({
-  updateSelectizeInput(session, "columns_fuzzy",
-           choices= colnames(data$tot),
-           selected = colnames(data$tot))
-})
+updateSelectizeInput(session, "columns_fuzzy",
+         choices= colnames(data$tot),
+         selected = colnames(data$tot))
 
-observe({
 updateSelectizeInput(session, "grouping_vars",
            choices= colnames(data$tot),
            selected = c('Name', 'Vorname'))
-})
 
-  observe({
 updateSelectizeInput(session, "grouping_vars_fuzzy",
            choices= colnames(data$tot),
            selected = c('Name', 'Vorname'))
 })
 
-
-
-
+# get exact duplicates
   observe({
     req(data$new, data$hist)
     data$dupl_names <- tibble(get_duplicate_records(first_df = data$new, second_df = data$hist, group_vars = input$grouping_vars))
@@ -169,13 +151,6 @@ data$dupl_fuzzy_show %>%
            filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
-
-
-  observe({
-print(input$tabs)
-  })
-
-
 observeEvent(input$excel_fuzzy, {
     if (input$excel_fuzzy==1) {
 wb[['fuzzy']] <- openxlsx::createWorkbook()
@@ -187,10 +162,10 @@ wb[['exact']] <- openxlsx::createWorkbook()
   openxlsx::addWorksheet(wb[['fuzzy']], sheetName = sheet_name)
   openxlsx::writeData(wb[['fuzzy']], sheet = sheet_name, x = data$dupl_fuzzy_show, startCol = 1, startRow = 1)
   } else {
-    groups <- paste0(input$grouping_vars, collapse='_')
+  groups <- paste0(input$grouping_vars, collapse='_')
   sheet_name <- paste0(input$excel_fuzzy,'exact', groups, collapse='_')
-openxlsx::addWorksheet(wb[['exact']], sheetName = sheet_name)
-openxlsx::writeData(wb[['exact']], sheet = sheet_name, x = data$dupl_names_show, startCol = 1, startRow = 1)
+  openxlsx::addWorksheet(wb[['exact']], sheetName = sheet_name)
+  openxlsx::writeData(wb[['exact']], sheet = sheet_name, x = data$dupl_names_show, startCol = 1, startRow = 1)
     }
 })
 
@@ -211,13 +186,19 @@ openxlsx::writeData(wb[['exact']], sheet = sheet_name, x = data$dupl_names_show,
     }
 )
 
+  # save total data to excel (restricted to one click)
   observeEvent(input$transfer, {
+    if (input$transfer == 1) {
     wb <- openxlsx::createWorkbook()
     openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
     openxlsx::writeData(wb, sheet = 'Sendungen', x = data$tot, startCol = 1, startRow = 1)
     openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
+      }
   })
 
+  observeEvent(input$file_input,{
+                updateTabItems(session, 'tabs', selected = 'new')
+  })
 
     output$user <- renderUser({
     dashboardUser(
@@ -225,7 +206,7 @@ openxlsx::writeData(wb[['exact']], sheet = sheet_name, x = data$dupl_names_show,
     image = 'ProfilFoto',
     title = "Swissmedic 4.0",
     subtitle = "Data Scientist",
-    footer = p('Logged in', class = "text-center"),
+    footer = p('App creator', class = "text-center"),
     fluidRow(
     dashboardUserItem(
     width = 6,
@@ -243,12 +224,6 @@ openxlsx::writeData(wb[['exact']], sheet = sheet_name, x = data$dupl_names_show,
       )
     )
   })
-
-
-
-
-
-
 
 }
 
