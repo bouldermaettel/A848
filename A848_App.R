@@ -8,23 +8,129 @@ sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
 addResourcePath('A848_logo', 'www/A848_logo.jpg')
 addResourcePath('ProfilFoto', './www/ProfilFoto.jpg')
 addResourcePath('app.css', './www/app.css')
+          chooseSliderSkin("Flat", color = "#e00007")
 
-
-
-source('./app_helper_files/sidebar.R')
-source('./app_helper_files/body.R')
-source('./app_helper_files/header.R')
-source('./app_helper_files/controlbar.R')
 source('./app_helper_files/radioTooltips.R')
 
-
 ui <- function(request) {
-  dashboardPage(skin='red-light',
-  header,
-  sidebar,
-  body,
-  controlbar
-  )
+
+  ############# Header
+dashboardPage(skin='red-light',
+dashboardHeader(title = div(img(src = 'A848_logo', height = "55px"),
+style = "position: relative; margin: -3px 0px 0px -25px; display:left-align;"),
+titleWidth=300,
+leftUi = tagList(
+appButton(inputId = "hide", label = NULL, icon = icon("eye-slash")),
+bsTooltip(id='hide', 'Click to hide the header', placement = "bottom", trigger = "hover", options = NULL),
+bsTooltip(id='excel_fuzzy', 'Add current analysis to excel tab', placement = "bottom", trigger = "hover", options = NULL),
+bsTooltip(id='xlsx', 'download xlsx', placement = "bottom", trigger = "hover", options = NULL),
+
+appButton(inputId = "excel_fuzzy", label = NULL, icon = icon("save")),
+downloadButton("xlsx", NULL,block = F, style = "simple", size="lg")),
+
+dropdownMenuOutput("taskMenu"),
+tags$li(a(href = 'http://www.swissmedic.ch', icon("home"), title = "Swissmedic Home"), class = "dropdown"),userOutput("user")
+),
+### sidebar
+dashboardSidebar(width = 300,
+sidebarMenu(id='tabs',
+conditionalPanel('input.hide > input.show',
+appButton(inputId = "show", label = NULL, icon = icon("eye"))),
+bsTooltip(id='show', 'Click to show the header', placement = "bottom", trigger = "hover",options = NULL),
+
+menuItem("Historic", tabName = "hist", icon = icon("th")),
+menuItem("New", icon = icon('line-chart'), tabName = "new",
+badgeLabel = "new", badgeColor = "green"),
+menuItem("Total", icon = icon('pushpin', lib = "glyphicon"), tabName = 'total',
+badgeLabel = "total", badgeColor = "green"),
+menuItem("Duplicates", icon = icon('pushpin', lib = "glyphicon"), tabName = 'dupl_names',
+badgeLabel = "total", badgeColor = "green"),
+menuItem("Fuzzy duplicates", icon = icon('pushpin', lib = "glyphicon"), tabName = 'fuzzy_dups',
+badgeLabel = "total", badgeColor = "green"),
+fileInput('file_input', 'Choose file with data to be loaded', accept = c('.csv','.xlsx')),
+conditionalPanel("input.tabs != `hist`",
+appButton(inputId = "transfer", label = "Transfer", icon = icon("save"))),
+bsTooltip(id='transfer', 'Transfer new Data to database', placement = "bottom", trigger = "hover",options = NULL)
+)),
+
+#### body
+dashboardBody(
+          # initialize shinyjs
+          shinyjs::useShinyjs(),
+          # add custom JS code
+          extendShinyjs(text = "shinyjs.hidehead = function(parm){
+                                    $('header').css('display', parm);
+                                }", functions = c('hidehead')),
+
+  ### style the shiny notification according to the stylesheet
+  tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "app.css")),
+
+tabItems(
+  #### Tab hist
+tabItem(tabName = "hist",
+        box(title = h3("Choose columns to be shown"), width = 4,
+  selectizeInput("columns_hist",label = NULL,
+                 choices= c("Name", "Vorname", "Strasse", "PLZ"),
+                 selected = c("Name", "Vorname", "Strasse", "PLZ"),
+                 multiple =T, options = NULL)),
+  DTOutput("hist_data", width = '100%' )),
+
+### Tab New
+tabItem(tabName = "new",
+        box(title = h3("Choose columns to be shown"), width = 4,
+  selectizeInput("columns_new",label = NULL,
+                 choices= c("Name", "Vorname", "Strasse", "PLZ"),
+                 selected = c("Name", "Vorname", "Strasse", "PLZ"),
+                 multiple =T, options = NULL)),
+  DTOutput("new_data", width = '100%' )),
+
+  ### Tab total
+tabItem(tabName = "total",
+                               box(title = h3("Choose columns to be shown"), width = 4,
+  selectizeInput("columns_tot",label = NULL,
+                 choices= c("Name", "Vorname", "Strasse", "PLZ"),
+                 selected = c("Name", "Vorname", "Strasse", "PLZ"),
+                 multiple =T, options = NULL)),
+DTOutput("total_data", width = '100%' )),
+
+  ### Tab duplicates names
+tabItem(tabName = "dupl_names",
+                       box(title = h3('Choose grouping vars for duplicate detection'), width = 4,
+  selectizeInput("grouping_vars",label = NULL,
+                 choices= c("Name", "Vorname", "Strasse", "PLZ"),
+                 selected = c("Name", "Vorname"),
+                 multiple =T, options = NULL)),
+           box(title = h3('Choose columns to be shown'), width = 4,
+selectizeInput("columns_dupl",label = NULL,
+               choices= c("Name", "Vorname", "Strasse", "PLZ"),
+               selected = c("Name", "Vorname", "Strasse", "PLZ"),
+               multiple =T, options = NULL)),
+DTOutput("dupl_data", width = '100%' )),
+
+    ### Tab fuzzy dups
+tabItem(tabName = "fuzzy_dups",
+                       box(title = h3('Choose grouping vars for fuzzy duplicate detection'), width = 4,
+  selectizeInput("grouping_vars_fuzzy",label = NULL,
+                 choices= c("Name", "Vorname", "Strasse", "PLZ"),
+                 selected = c("Name", "Vorname"),
+                 multiple =T, options = NULL),
+sliderInput('fuzzy', 'Define max allowed Levenshtein distance', min=0, max=0.3, value=0.05, step=0.01),
+          appButton(inputId = "calc", label = "Calculate", icon = icon("box"))),
+                               box(title = h3('Choose columns to be shown'), width = 4,
+selectizeInput("columns_fuzzy",label = "Choose columns to be shown",
+               choices= c("Name", "Vorname", "Strasse", "PLZ"),
+               selected = c("Name", "Vorname", "Strasse", "PLZ"),
+               multiple =T, options = NULL)),
+DTOutput("dupl_fuzzy", width = '100%' )))),
+
+### controlbar (empty at the moment)
+dashboardControlbar(skin = "light", collapsed = TRUE, width = 250,
+controlbarMenu(
+id = "menu",
+controlbarItem(
+NULL,
+chooseSliderSkin("Flat", color = "#e00007")
+))))
 }
 
 server <- function(input, output, session){
