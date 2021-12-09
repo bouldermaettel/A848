@@ -2,7 +2,8 @@ source('./app_helper_files/radioTooltips.R')
 
 sidebar <- dashboardSidebar(width = 300,
   sidebarMenu(id='tabs',
-
+                      conditionalPanel('input.hide > input.show',
+                                        appButton(inputId = "show", label = NULL, icon = icon("eye"))),
     bsTooltip(id='show', 'Click to show the header', placement = "bottom", trigger = "hover",options = NULL),
 
     menuItem("Historic", tabName = "hist", icon = icon("th")),
@@ -18,7 +19,6 @@ sidebar <- dashboardSidebar(width = 300,
               conditionalPanel("input.tabs != `hist`",
               appButton(inputId = "transfer", label = "Transfer", icon = icon("save"))),
     bsTooltip(id='transfer', 'Transfer new Data to database', placement = "bottom", trigger = "hover",options = NULL)
-
 ))
 
 

@@ -17,7 +17,6 @@ tabItem(tabName = "hist",
                  choices= c("Name", "Vorname", "Strasse", "PLZ"),
                  selected = c("Name", "Vorname", "Strasse", "PLZ"),
                  multiple =T, options = NULL)),
-
   DTOutput("hist_data", width = '100%' )),
 
 ### Tab New
@@ -27,7 +26,6 @@ tabItem(tabName = "new",
                  choices= c("Name", "Vorname", "Strasse", "PLZ"),
                  selected = c("Name", "Vorname", "Strasse", "PLZ"),
                  multiple =T, options = NULL)),
-
   DTOutput("new_data", width = '100%' )),
 
   ### Tab total
@@ -37,7 +35,6 @@ tabItem(tabName = "total",
                  choices= c("Name", "Vorname", "Strasse", "PLZ"),
                  selected = c("Name", "Vorname", "Strasse", "PLZ"),
                  multiple =T, options = NULL)),
-
 DTOutput("total_data", width = '100%' )),
 
   ### Tab duplicates names
@@ -52,7 +49,6 @@ selectizeInput("columns_dupl",label = NULL,
                choices= c("Name", "Vorname", "Strasse", "PLZ"),
                selected = c("Name", "Vorname", "Strasse", "PLZ"),
                multiple =T, options = NULL)),
-
 DTOutput("dupl_data", width = '100%' )),
 
     ### Tab fuzzy dups
@@ -69,7 +65,6 @@ selectizeInput("columns_fuzzy",label = "Choose columns to be shown",
                choices= c("Name", "Vorname", "Strasse", "PLZ"),
                selected = c("Name", "Vorname", "Strasse", "PLZ"),
                multiple =T, options = NULL)),
-
 DTOutput("dupl_fuzzy", width = '100%' ))))
 
 

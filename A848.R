@@ -1,8 +1,6 @@
-
 rm(list = ls())
-packagesToLoad <- c('shiny', 'shinythemes' ,'shinyWidgets', 'shinyFiles',  'png', 'DT','xlsx',
-                    'tidyverse', 'keys', 'parallel', 'shinydashboard', 'shinydashboardPlus', 'data.table', 'fresh',
-                    'shinyjs', 'shinyBS', 'openxlsx')
+packagesToLoad <- c('shiny', 'shinythemes' ,'shinyWidgets', 'DT', 'tidyverse', 'shinydashboard', 'shinydashboardPlus',
+                    'data.table', 'fresh','shinyjs', 'shinyBS', 'openxlsx')
 
 # do the loading and print wether the package is installed
 sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
