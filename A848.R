@@ -33,7 +33,7 @@ server <- function(input, output, session){
     variable <- reactiveValues()
     data <- reactiveValues()
     wb <- reactiveValues()
-    data$path <- './data/Vereinfachtes_Verfahren_ab_2019.csv'
+    data$path <- './data/Vereinfachtes_Verfahren_ab_2019.xlsx'
 
   source('./src/data/data_wrangler.R')
 
@@ -54,13 +54,13 @@ js$hidehead('')
 
 # load data from database
 observe({
-  data$hist <- tibble(get_data(path = data$path))
+  data$hist <- tibble(get_data(path = data$path, sheet = 'Sendungen'))
   data$hist_show <- data$hist[,input$columns_hist]
 })
 
     output$hist_data <- renderDT({
     data$hist_show %>%
-       datatable( options = list(searching = T,pageLength=30, lengthMenu = c(10, 20, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+       datatable( options = list(searching = T,pageLength=20, c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
                  filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
     })
 
@@ -86,13 +86,13 @@ observe({
 
 output$new_data <- renderDT({
   data$new_show %>%
-  datatable( options = list(searching = T,pageLength=30, lengthMenu = c(10, 20, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+  datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
            filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
 output$total_data <- renderDT({
 data$tot_show %>%
-  datatable( options = list(searching = T,pageLength=30, lengthMenu = c(10, 20, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+  datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
            filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
@@ -151,7 +151,7 @@ updateSelectizeInput(session, "grouping_vars_fuzzy",
 
   output$dupl_data <- renderDT({
 data$dupl_names_show %>%
-  datatable( options = list(searching = T,pageLength=30, lengthMenu = c(10, 20, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+  datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
            filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
@@ -165,7 +165,7 @@ observeEvent(input$calc, {
 
   output$dupl_fuzzy <- renderDT({
 data$dupl_fuzzy_show %>%
-  datatable( options = list(searching = T,pageLength=30, lengthMenu = c(10, 20, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+  datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
            filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
@@ -180,7 +180,7 @@ observeEvent(input$excel_fuzzy, {
     if (input$excel_fuzzy==1) {
 wb[['fuzzy']] <- openxlsx::createWorkbook()
 wb[['exact']] <- openxlsx::createWorkbook()
-    } else {
+    }
   if (input$tabs == "fuzzy_dups") {
   groups <- paste0(input$grouping_vars_fuzzy, collapse='_')
   sheet_name <- paste0(input$excel_fuzzy,'fuzzy', groups, input$fuzzy, collapse='_')
@@ -192,7 +192,6 @@ wb[['exact']] <- openxlsx::createWorkbook()
 openxlsx::addWorksheet(wb[['exact']], sheetName = sheet_name)
 openxlsx::writeData(wb[['exact']], sheet = sheet_name, x = data$dupl_names_show, startCol = 1, startRow = 1)
     }
-  }
 })
 
   output$xlsx <- downloadHandler(
@@ -213,12 +212,10 @@ openxlsx::writeData(wb[['exact']], sheet = sheet_name, x = data$dupl_names_show,
 )
 
   observeEvent(input$transfer, {
-    write.table( data$new,
-             file= data$path,
-             append = T,
-             sep=',',
-             row.names=F,
-             col.names=F )
+    wb <- openxlsx::createWorkbook()
+    openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
+    openxlsx::writeData(wb, sheet = 'Sendungen', x = data$tot, startCol = 1, startRow = 1)
+    openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
   })
 
 

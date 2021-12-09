@@ -4,7 +4,7 @@
 # Project: A848
 ##################################################################################
 rm(list = ls())
-packagesToLoad <- c('testthat', 'data.table', 'xlsx')
+packagesToLoad <- c('testthat', 'data.table', 'xlsx', 'rJava')
 # do the loading and print wether the package is installed
 sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
 
@@ -62,8 +62,8 @@ test_that('get_duplicate_records', {
                                                    group_vars = c('Name', 'Vorname'))), 2)
 })
 
-df <- get_data(path = path_xlsx, sheet = sheet_name)
-write.xlsx2(df, './data/Kopie_Vereinfachtes_Verfahren_ab_2019.csv', sheetName = "Sendungen",
-  col.names = F, row.names = F, append = T)
 
 
+    wb <- openxlsx::createWorkbook()
+    openxlsx::addWorksheet(wv, sheetName = 'Sendungen')
+    openxlsx::writeData(w, sheet = 'Sendungen', x = data$tot, startCol = 1, startRow = 1)
