@@ -10,8 +10,8 @@ sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
 
 
 # source data wrangling functions
-source('./src/data/data_wrangler.R')
-source('./data/test_data.R')
+source('./src/data/data_wrangler.R', chdir = T)
+source('./data/test_data.R', chdir = T)
 
 path_xlsx <- './data/Vereinfachtes_Verfahren_ab_2019.xlsx'
 path_csv <- './data/Vereinfachtes_Verfahren_ab_2019.csv'
@@ -63,6 +63,3 @@ test_that('get_duplicate_records', {
 
 
 
-    wb <- openxlsx::createWorkbook()
-    openxlsx::addWorksheet(wv, sheetName = 'Sendungen')
-    openxlsx::writeData(w, sheet = 'Sendungen', x = data$tot, startCol = 1, startRow = 1)
