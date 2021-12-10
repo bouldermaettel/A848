@@ -50,7 +50,7 @@ test_that('get_fuzzy_duplicated_records_one_df', {
 })
 
 test_that('get_fuzzy_duplicated_records_two_dfs', {
-           expect_equal(nrow(get_fuzzy_duplicated_records(first_df = new_data ,
+           expect_equal(nrow(get_fuzzy_duplicate_records(first_df = new_data ,
                                                           second_df = hist_data,
                                                           group_vars = c('Name', 'Vorname'),
                                                           max_distance = 0.1)), 4)
@@ -58,7 +58,6 @@ test_that('get_fuzzy_duplicated_records_two_dfs', {
 
 test_that('get_duplicate_records', {
            expect_equal(nrow(get_duplicate_records(first_df = new_data ,
-                                                   second_df = NULL,
                                                    group_vars = c('Name', 'Vorname'))), 2)
 })
 
