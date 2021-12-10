@@ -11,13 +11,8 @@ body <- dashboardBody(
 
 tabItems(
   #### Tab hist
-tabItem(tabName = "hist",
-        box(title = h3("Choose columns to be shown"), width = 4,
-  selectizeInput("columns_hist",label = NULL,
-                 choices= c("Name", "Vorname", "Strasse", "PLZ"),
-                 selected = c("Name", "Vorname", "Strasse", "PLZ"),
-                 multiple =T, options = NULL)),
-  DTOutput("hist_data", width = '100%' )),
+tabItem(tabName = "data",
+  DTOutput("data", width = '100%' )),
 
 ### Tab New
 tabItem(tabName = "new",
