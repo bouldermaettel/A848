@@ -14,14 +14,17 @@ proxy:
   specs:
   - id: shinypython
     display-name: Shiny App with python and R
+    description: App to test the orchestration of R & Python environment
     container-cmd: ["R", "-e", "shiny::runApp('/root/app')"]
+    logo-url: https://raw.githubusercontent.com/bouldermaettel/A848/main/data/shiny_python.png
     container-image: shiny-python-app
     access-groups: admins
     container-network: virtual-net
   - id: duplicatefinder
     display-name: A848 for duplicate analysis
+    description: App to detect duplicates
     container-cmd: [ "R", "-e", "shiny::runApp('/root/app')" ]
-    logo-url: https://github.com/bouldermaettel/A848/blob/main/data/prntscreen.png
+    logo-url: https://raw.githubusercontent.com/bouldermaettel/A848/main/data/prntscreen.png
     container-image: duplicate-finder
     access-groups: admins
     container-network: virtual-net
