@@ -55,7 +55,7 @@ conditionalPanel("input.tabs == 'duplicates'",
 shinyWidgets::awesomeRadio('calc_mode', 'Choose calulation mode', choices = c("exact", 'fuzzy'),
                            selected = "exact", status = "danger"),
 conditionalPanel('input.calc_mode == `fuzzy`',
-            sliderInput('fuzzy', 'Define max allowed Levenshtein distance', min=0, max=0.3, value=0, step=0.01),
+            sliderInput('fuzzy', 'Define max allowed Levenshtein distance', min=0, max=0.3, value=0.05, step=0.01),
               appButton(inputId = "calc", label = "Calculate", icon = icon("box")))),
 conditionalPanel("input.data_source != 'historic'",
               appButton(inputId = "transfer", label = "Transfer", icon = icon("save"))),
@@ -119,7 +119,8 @@ options(shiny.maxRequestSize=50000*1024^2)
 # load data from database
 data$path <- './data/Vereinfachtes_Verfahren_ab_2019.xlsx'
 observe({
-  data$hist <- tibble(get_data(path = data$path, sheet = 'Sendungen'))
+  # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
+    data$hist <- tibble::tibble(readRDS(file = "./data/historic_data.rds"))
 })
 
 # import new file
@@ -149,7 +150,7 @@ observe({
 observe({
 updateSelectizeInput(session, "columns",
            choices= colnames(data$hist),
-           selected = colnames(data$hist))
+           selected = c('Name', 'Vorname'))
 
 updateSelectizeInput(session, "grouping_vars",
            choices= colnames(data$hist),
@@ -171,7 +172,6 @@ observe({
     }
   }
 })
-
 
 # get exact duplicates
 observe({
@@ -258,19 +258,19 @@ wb[['duplicates']] <- openxlsx::createWorkbook()
   if (input$tabs == 'duplicates') {
   if (input$calc_mode == "fuzzy") {
   groups <- paste0(input$grouping_vars, collapse='_')
-  sheet_name <- paste(input$excel,'fuzzy', groups, input$fuzzy, sep='_')
+  sheet_name <- substr(paste(input$excel,'fuzzy', groups, input$fuzzy, sep='_'),1,31)
 
   openxlsx::addWorksheet(wb[['duplicates']], sheetName = sheet_name)
   openxlsx::writeData(wb[['duplicates']], sheet = sheet_name, x = data$show_dupl, startCol = 1, startRow = 1)
   } else {
   groups <- paste0(input$grouping_vars, collapse='_')
-      sheet_name <- paste(input$excel,'exact', groups, sep='_')
+      sheet_name <- substr(paste(input$excel,'exact', groups, sep='_'),1,31)
   openxlsx::addWorksheet(wb[['duplicates']], sheetName = sheet_name)
   openxlsx::writeData(wb[['duplicates']], sheet = sheet_name, x = data$show_dupl, startCol = 1, startRow = 1)
     }
   } else if (input$tabs == 'unique') {
   groups <- paste0(input$grouping_vars, collapse='_')
-  sheet_name <- paste(input$excel,'unique', groups, sep ='_')
+  sheet_name <- substr(paste(input$excel,'unique', groups, sep ='_'),1,31)
   openxlsx::addWorksheet(wb[['duplicates']], sheetName = sheet_name)
   openxlsx::writeData(wb[['duplicates']], sheet = sheet_name, x = data$show_unique, startCol = 1, startRow = 1)
   }
@@ -288,16 +288,21 @@ wb[['duplicates']] <- openxlsx::createWorkbook()
   # save total data to excel (restricted to one click)
   observeEvent(input$transfer, {
     if (input$transfer == 1) {
-    wb <- openxlsx::createWorkbook()
-    openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
-    openxlsx::writeData(wb, sheet = 'Sendungen', x = data$tot, startCol = 1, startRow = 1)
-    openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
+    # wb <- openxlsx::createWorkbook()
+    # openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
+    # openxlsx::writeData(wb, sheet = 'Sendungen', x = data$all, startCol = 1, startRow = 1)
+    # openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
+      saveRDS(data$all, file = "./data/historic_data.rds")
       }
   })
 
   observeEvent(input$file_input,{
 shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic", "new", 'all', "historic & new"),
                              selected = "new")
+  })
+
+    output$dirs <- renderText({
+    paste(list.dirs('.', recursive=FALSE), collapse = ' | ')
   })
 
     output$user <- renderUser({

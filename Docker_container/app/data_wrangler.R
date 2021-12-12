@@ -9,6 +9,7 @@ packagesToLoad <- c('dplyr', 'data.table', 'readxl')
 # # do the loading and print wether the package is installed
 sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
 
+
 # def dataloader
 get_data <- function(path, sheet=NULL) {
   if (!is.null(sheet)) {
@@ -121,5 +122,5 @@ substrRight <- function(x, n){
 #
 # sum(matching_vector3 == matching_vector4)
 # dim(matching_matrix1)
-
-# readxl::read_xlsx(path='data/Vereinfachtes_Verfahren_ab_2019.xlsx', sheet='Sendungen')
+#
+# # readxl::read_xlsx(path='data/Vereinfachtes_Verfahren_ab_2019.xlsx', sheet='Sendungen')

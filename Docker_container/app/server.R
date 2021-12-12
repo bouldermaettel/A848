@@ -1,38 +1,9 @@
-rm(list = ls())
-packagesToLoad <- c('shiny', 'shinythemes' ,'shinyWidgets', 'DT', 'tidyverse', 'shinydashboard', 'shinydashboardPlus',
-                    'data.table', 'fresh','shinyjs', 'shinyBS', 'openxlsx')
-
-# do the loading and print wether the package is installed
-sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
-
-addResourcePath('A848_logo', '../www/A848_logo.jpg')
-addResourcePath('ProfilFoto', '../www/ProfilFoto.jpg')
-addResourcePath('app.css', '../www/app.css')
-
-
-
-source('../app_helper_files/sidebar.R')
-source('../app_helper_files/body.R')
-source('../app_helper_files/header.R')
-source('../app_helper_files/controlbar.R')
-source('../app_helper_files/radioTooltips.R')
-
-
-ui <- function(request) {
-  dashboardPage(skin='red-light',
-  header,
-  sidebar,
-  body,
-  controlbar
-  )
-}
-
-server <- function(input, output, session){
+function(input, output, session){
 variable <- reactiveValues()
 data <- reactiveValues()
 wb <- reactiveValues()
 
-source('../src/data/data_wrangler.R')
+source('data_wrangler.R')
 
 observeEvent(input$hide, {
 js$hidehead('none')
@@ -48,9 +19,10 @@ js$hidehead('')
 options(shiny.maxRequestSize=50000*1024^2)
 
 # load data from database
-data$path <- '../data/Vereinfachtes_Verfahren_ab_2019.xlsx'
+data$path <- 'data/Vereinfachtes_Verfahren_ab_2019.xlsx'
 observe({
-  data$hist <- tibble(get_data(path = data$path, sheet = 'Sendungen'))
+  # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
+  data$hist <- tibble::tibble(readRDS(file = "./data/historic_data.rds"))
 })
 
 # import new file
@@ -59,9 +31,9 @@ observe({
   inFile <- input$file_input
   ext <- substrRight(inFile$datapath, 4)
   if (ext == 'xlsx') {
-    data$new <-  tibble(get_data(inFile$datapath, sheet='Sendungen' ))
+    data$new <-  tibble::tibble(get_data(inFile$datapath, sheet='Sendungen' ))
   } else {
-    data$new <-  tibble(get_data(inFile$datapath))
+    data$new <-  tibble::tibble(get_data(inFile$datapath))
   }
     data$all <- bind_rows(data$new, data$hist)
 })
@@ -92,30 +64,29 @@ observe({
   req(data$hist)
   if (input$tabs == 'unique') {
   if (input$data_source == 'historic') {
-      data$unique <- tibble(get_uniques(first_df = data$hist, second_df = NULL, as.list(input$grouping_vars)))
+      data$unique <- tibble::tibble(get_uniques(first_df = data$hist, second_df = NULL, as.list(input$grouping_vars)))
   } else if (input$data_source == 'new')  {
-      data$unique <- tibble(get_uniques(first_df = data$new, second_df = NULL, as.list(input$grouping_vars)))
+      data$unique <- tibble::tibble(get_uniques(first_df = data$new, second_df = NULL, as.list(input$grouping_vars)))
   } else if (input$data_source == 'all')  {
-      data$unique <- tibble(get_uniques(first_df = data$all, second_df = NULL, as.list(input$grouping_vars)))
+      data$unique <- tibble::tibble(get_uniques(first_df = data$all, second_df = NULL, as.list(input$grouping_vars)))
   } else if (input$data_source == 'historic & new')  {
-  data$unique <- tibble(get_uniques(first_df = data$new, second_df = data$hist, as.list(input$grouping_vars)))
+  data$unique <- tibble::tibble(get_uniques(first_df = data$new, second_df = data$hist, as.list(input$grouping_vars)))
     }
   }
 })
-
 
 # get exact duplicates
 observe({
   req(data$hist)
   if (input$calc_mode == 'exact') {
   if (input$data_source == 'historic') {
-      data$dupl <- tibble(get_duplicate_records(first_df = data$hist, group_vars = input$grouping_vars))
+      data$dupl <- tibble::tibble(get_duplicate_records(first_df = data$hist, group_vars = input$grouping_vars))
   } else if (input$data_source == 'new')  {
-      data$dupl <- tibble(get_duplicate_records(first_df = data$new, group_vars = input$grouping_vars))
+      data$dupl <- tibble::tibble(get_duplicate_records(first_df = data$new, group_vars = input$grouping_vars))
   } else if (input$data_source == 'all')  {
-      data$dupl <- tibble(get_duplicate_records(first_df = data$all,group_vars = input$grouping_vars))
+      data$dupl <- tibble::tibble(get_duplicate_records(first_df = data$all,group_vars = input$grouping_vars))
   } else if (input$data_source == 'historic & new')  {
-  data$dupl <- tibble(get_duplicate_records(first_df = data$new, second_df = data$hist, group_vars = input$grouping_vars))
+  data$dupl <- tibble::tibble(get_duplicate_records(first_df = data$new, second_df = data$hist, group_vars = input$grouping_vars))
     }
   }
 })
@@ -124,16 +95,16 @@ observe({
 observeEvent(input$calc, {
   req(data$hist)
   if (input$data_source == 'historic') {
-      data$dupl_fuzzy <- tibble(get_fuzzy_duplicate_records(first_df = data$hist, group_vars = input$grouping_vars,
+      data$dupl_fuzzy <- tibble::tibble(get_fuzzy_duplicate_records(first_df = data$hist, group_vars = input$grouping_vars,
                                                              max_distance = input$fuzzy))
   } else if (input$data_source == 'new')  {
-      data$dupl_fuzzy <- tibble(get_fuzzy_duplicate_records(first_df = data$new, group_vars = input$grouping_vars,
+      data$dupl_fuzzy <- tibble::tibble(get_fuzzy_duplicate_records(first_df = data$new, group_vars = input$grouping_vars,
                                                              max_distance = input$fuzzy))
   } else if (input$data_source == 'all')  {
-      data$dupl_fuzzy <- tibble(get_fuzzy_duplicate_records(first_df = data$all, group_vars = input$grouping_vars,
+      data$dupl_fuzzy <- tibble::tibble(get_fuzzy_duplicate_records(first_df = data$all, group_vars = input$grouping_vars,
                                                              max_distance = input$fuzzy))
   } else if (input$data_source == 'historic & new')  {
-  data$dupl_fuzzy <- tibble(get_fuzzy_duplicate_records(first_df = data$new, second_df = data$hist,
+  data$dupl_fuzzy <- tibble::tibble(get_fuzzy_duplicate_records(first_df = data$new, second_df = data$hist,
                                                group_vars = input$grouping_vars, max_distance = input$fuzzy))
       }
 })
@@ -165,19 +136,19 @@ observe({
 
 output$data <- renderDT({
   data$show %>%
-     datatable( options = list(searching = T,pageLength=20, c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+     DT::datatable( options = list(searching = T,pageLength=20, c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
                filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
 output$dupl <- renderDT({
   data$show_dupl %>%
-    datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+    DT::datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
              filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
   output$unique <- renderDT({
   data$show_unique %>%
-    datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+    DT::datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
              filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
@@ -219,10 +190,11 @@ wb[['duplicates']] <- openxlsx::createWorkbook()
   # save total data to excel (restricted to one click)
   observeEvent(input$transfer, {
     if (input$transfer == 1) {
-    wb <- openxlsx::createWorkbook()
-    openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
-    openxlsx::writeData(wb, sheet = 'Sendungen', x = data$tot, startCol = 1, startRow = 1)
-    openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
+    # wb <- openxlsx::createWorkbook()
+    # openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
+    # openxlsx::writeData(wb, sheet = 'Sendungen', x = data$all, startCol = 1, startRow = 1)
+    # openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
+      saveRDS(data$all, file = "data/historic_data.rds")
       }
   })
 
@@ -231,10 +203,14 @@ shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic",
                              selected = "new")
   })
 
+  output$dirs <- renderText({
+    paste(list.dirs('.', recursive=FALSE), collapse = ' | ')
+  })
+print(paste(list.dirs('.', recursive=FALSE), collapse = ' | '))
     output$user <- renderUser({
     dashboardUser(
     name = "Matthias Mueller",
-    image = 'ProfilFoto',
+    image = 'ProfilFoto.jpg',
     title = "Swissmedic 4.0",
     subtitle = "Data Scientist",
     footer = p('App creator', class = "text-center"),
@@ -248,7 +224,7 @@ shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic",
     dashboardUserItem(
     width = 6,
     socialButton(
-    href = "https://github.com",
+    href = "http//github.com",
     icon = icon("github")
           )
         )
@@ -257,5 +233,3 @@ shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic",
   })
 
 }
-
-shinyApp(ui = ui, server = server)
