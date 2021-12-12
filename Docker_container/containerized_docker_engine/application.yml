@@ -21,6 +21,7 @@ proxy:
   - id: duplicatefinder
     display-name: A848 for duplicate analysis
     container-cmd: [ "R", "-e", "shiny::runApp('/root/app')" ]
+    logo-url: https://github.com/bouldermaettel/A848/blob/main/data/prntscreen.png
     container-image: duplicate-finder
     access-groups: admins
     container-network: virtual-net
