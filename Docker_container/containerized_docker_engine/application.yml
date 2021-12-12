@@ -1,0 +1,30 @@
+
+proxy:
+  port: 8080
+  logo-url: https://www.openanalytics.eu/shinyproxy/logo.png
+  authentication: simple
+  admin-groups: admins
+  landing-page: /
+  users:
+  - name: matthias.mueller@swissmedic.ch
+    password: Mamu1379
+    groups: admins
+  docker:
+      internal-networking: true
+  specs:
+  - id: shinypython
+    display-name: Shiny App with python and R
+    container-cmd: ["R", "-e", "shiny::runApp('/root/app')"]
+    container-image: shiny-python-app
+    access-groups: admins
+    container-network: virtual-net
+  - id: duplicatefinder
+    display-name: A848 for duplicate analysis
+    container-cmd: [ "R", "-e", "shiny::runApp('/root/app')" ]
+    container-image: duplicate-finder
+    access-groups: admins
+    container-network: virtual-net
+
+logging:
+  file:
+    shinyproxy.log
