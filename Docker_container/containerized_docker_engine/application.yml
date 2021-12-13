@@ -1,7 +1,8 @@
 
 proxy:
+  title: SMC 40 Proxy
   port: 8080
-  logo-url: https://www.openanalytics.eu/shinyproxy/logo.png
+  logo-url: https://raw.githubusercontent.com/bouldermaettel/A848/main/data/SMC40%208.jpg
   authentication: simple
   admin-groups: admins
   landing-page: /
