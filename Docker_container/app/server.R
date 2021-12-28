@@ -18,12 +18,47 @@ js$hidehead('')
 # adapt the max size of file-upload (the def
 options(shiny.maxRequestSize=50000*1024^2)
 
-# load data from database
-data$path <- 'data/Vereinfachtes_Verfahren_ab_2019.xlsx'
+  # load data from database
 observe({
-  # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
-  data$hist <- tibble::tibble(readRDS(file = "./data/historic_data.rds"))
-})
+
+pgdrv <- dbDriver(drvName = "PostgreSQL")
+con <-DBI::dbConnect(pgdrv,
+                    dbname="postgres",
+                    host="172.20.0.6", port=5432,
+                    user = 'root',
+                    password = 'root')
+
+# DBI::dbWriteTable(con, "historic_data", data)
+# DBI::dbListTables(con)
+# DBI::dbRemoveTable(con, 'mtcars')
+# res <- dbSendQuery(con, "SELECT * FROM illegal-deliveries WHERE date = 4")
+res <- dbSendQuery(con, "SELECT * FROM historic_data")
+data_temp <- dbFetch(res)
+data_temp$row.names <- NULL
+data$hist <- tibble::tibble(data_temp)
+
+# dbClearResult(res)
+
+# # Clear the result
+# dbClearResult(res)
+#
+# # Disconnect from the database
+# dbDisconnect(con)
+
+  })
+
+# load data from database
+# data$path <- 'data/Vereinfachtes_Verfahren_ab_2019.xlsx'
+# observe({
+#   # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
+#   if (exists("/home/bouldermaettel/Documents/A848data/historic_data.rds")) {
+#       data <- tibble::tibble(readRDS(file = "data/performance_test.rds"))
+#   } else {
+#           data$hist <- tibble::tibble(readRDS(file = "./data/historic_data.rds"))
+#   }
+# })
+
+
 
 # import new file
 observe({
@@ -190,11 +225,12 @@ wb[['duplicates']] <- openxlsx::createWorkbook()
   # save total data to excel (restricted to one click)
   observeEvent(input$transfer, {
     if (input$transfer == 1) {
-    # wb <- openxlsx::createWorkbook()
+
+   # wb <- openxlsx::createWorkbook()
     # openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
     # openxlsx::writeData(wb, sheet = 'Sendungen', x = data$all, startCol = 1, startRow = 1)
     # openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
-      saveRDS(data$all, file = "data/historic_data.rds")
+      saveRDS(data$all, file = "./data/historic_data.rds")
       }
   })
 
@@ -233,3 +269,38 @@ print(paste(list.dirs('.', recursive=FALSE), collapse = ' | '))
   })
 
 }
+
+# anonymize data
+# df <- readRDS('./Docker_container/app/data/historic_data.rds')
+# df2[['Name']] <- randomNames::randomNames(100, which.names='first')
+# df2[['Name']] <- randomNames::randomNames(100, which.names='last')
+# df2[['Strasse']] <- paste(randomNames::randomNames(100, which.names='last'), sample.int(1:20, replace = T))
+
+# library(magrittr)
+#
+# for (i in 1:1000) {
+#   if (i == 1){
+#     df_new <- df
+#   } else {
+#     df_new <-   dplyr::bind_rows(df, df_new)
+#   }
+# }
+# head(df_new)
+# df_new %>% dim()
+#
+# df_new <- readRDS('./data/historic_data.rds')
+# df_new[['Vorname']] <- randomNames::randomNames(100000, which.names='first')
+# df_new[['Name']] <- randomNames::randomNames(100000, which.names='last')
+# df_new[['Strasse']] <- paste(randomNames::randomNames(100000, which.names='last'), sample.int(1:50, replace = T))
+#
+# saveRDS(df_new, './data/historic_data.rds')
+#
+# mock <- readxl::read_excel('./data/mock_data.xlsx')
+# mock[['Vorname']] <- randomNames::randomNames(20, which.names='first')
+# mock[['Name']] <- randomNames::randomNames(20, which.names='last')
+# mock[['Strasse']] <- paste(randomNames::randomNames(20, which.names='last'), sample.int(1:50, replace = T))
+#
+# wb <- openxlsx::createWorkbook()
+# openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
+# openxlsx::writeData(wb, sheet = 'Sendungen', x = mock, startCol = 1, startRow = 1)
+# openxlsx::saveWorkbook(wb,'./data/mock_data_2.xlsx')

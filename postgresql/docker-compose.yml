@@ -1,0 +1,41 @@
+## set up the volume first
+#  docker volume create pg-data
+
+version: '3.8'
+
+networks:
+  customnetwork:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+  db:
+    container_name: postgres_container
+    image: postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: illegal-deliveries
+    networks:
+      customnetwork:
+        ipv4_address: 172.20.0.6
+    ports:
+      - "5432:5432"
+#  pgadmin:
+#    container_name: pgadmin4_container
+#    image: dpage/pgadmin4
+#    restart: always
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: bouldermaettel@gmail.com
+#      PGADMIN_DEFAULT_PASSWORD: admin
+#    ports:
+#      - "5050:80"
+volumes:
+  pg-data:
+
+# start with: ~/postgres $ docker-compose up
+# stop with: ~/postgres $ docker-compose down

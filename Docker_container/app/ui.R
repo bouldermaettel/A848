@@ -1,5 +1,5 @@
 rm(list = ls())
-packagesToLoad <- c('shiny', 'shinythemes' ,'shinyWidgets', 'DT', 'tidyverse', 'shinydashboard', 'shinydashboardPlus',
+packagesToLoad <- c('RPostgreSQL', 'getPass','shiny', 'shinythemes' ,'shinyWidgets', 'DT', 'tidyverse', 'shinydashboard', 'shinydashboardPlus',
                     'data.table', 'fresh','shinyjs', 'shinyBS', 'openxlsx')
 
 # do the loading and print wether the package is installed

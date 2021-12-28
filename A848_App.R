@@ -1,11 +1,11 @@
 rm(list = ls())
-packagesToLoad <- c('shiny', 'shinythemes' ,'shinyWidgets', 'DT', 'tidyverse', 'shinydashboard', 'shinydashboardPlus',
+packagesToLoad <- c('shiny', 'shinythemes' ,'shinyWidgets', 'DT', 'dplyr', 'readxl', 'shinydashboard', 'shinydashboardPlus',
                     'data.table', 'fresh','shinyjs', 'shinyBS', 'openxlsx')
 
 # do the loading and print wether the package is installed
 sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
 
-addResourcePath('A848_logo', 'www/A848_logo.jpg')
+addResourcePath('A848_logo', './www/A848_logo.jpg')
 addResourcePath('ProfilFoto', './www/ProfilFoto.jpg')
 addResourcePath('app.css', './www/app.css')
 
@@ -120,7 +120,8 @@ options(shiny.maxRequestSize=50000*1024^2)
 data$path <- './data/Vereinfachtes_Verfahren_ab_2019.xlsx'
 observe({
   # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
-    data$hist <- tibble::tibble(readRDS(file = "./data/historic_data.rds"))
+    data$hist <- tibble::tibble(readRDS(file = "./data/performance_test.rds"))
+
 })
 
 # import new file
@@ -333,3 +334,6 @@ shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic",
 }
 
 shinyApp(ui = ui, server = server)
+
+
+#

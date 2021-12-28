@@ -56,7 +56,13 @@ CMD ["R", "-e", "shiny::runApp('/root/app')"]
 
 # docker build -t duplicate-finder .
 # docker run -it -p 3838:3838 duplicate-finder
+
 # docker network create virtual-net
 # docker build . -t sp-example
 # docker run -d -v /var/run/docker.sock:/var/run/docker.sock --net virtual-net -p 8080:8080 sp-example
-# "C:\Users\mam\Documents\R\R-4.1.0\bin\Rscript.exe" -e "shiny::runApp('app', launch.browser = TRUE)
+# bouldermaettel@bouldermaettelsZBOOK:~/PycharmProjects/A848/Docker_container$ R -e "shiny::runApp('app')"
+
+# docker tag duplicate-finder:latest bouldermaettel/dupliate-finder:latest
+# docker login -u bouldermaettel
+# docker push bouldermaettel/dupliate-finder:latest
+# bouldermaettel@bouldermaettelsZBOOK:~/PycharmProjects/A848/Docker_container$ R -e "shiny::runApp('app')"
