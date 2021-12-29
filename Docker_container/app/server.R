@@ -21,31 +21,33 @@ options(shiny.maxRequestSize=50000*1024^2)
   # load data from database
 observe({
 
+
 pgdrv <- dbDriver(drvName = "PostgreSQL")
-con <-DBI::dbConnect(pgdrv,
+  ## accessing database from host
+  # data$con <-DBI::dbConnect(pgdrv,
+  #                   dbname="postgres",
+  #                   host="172.20.0.6", port=5432,
+  #                   user = 'root',
+  #                   password = 'root')
+
+data$con <-DBI::dbConnect(pgdrv,
                     dbname="postgres",
-                    host="172.20.0.6", port=5432,
+                    host="db", port=5432,
                     user = 'root',
                     password = 'root')
 
-# DBI::dbWriteTable(con, "historic_data", data)
-# DBI::dbListTables(con)
-# DBI::dbRemoveTable(con, 'mtcars')
-# res <- dbSendQuery(con, "SELECT * FROM illegal-deliveries WHERE date = 4")
-res <- dbSendQuery(con, "SELECT * FROM historic_data")
-data_temp <- dbFetch(res)
-data_temp$row.names <- NULL
-data$hist <- tibble::tibble(data_temp)
-
+# DBI::dbWriteTable(con, 'historic_data', data, row.names = FALSE)
+# DBI::dbRemoveTable(con, 'historic_data')
+# dbListTables(con)
+#TODO: user input for filters (i.e. date filter)
+# res <- dbSendQuery(data$con, "SELECT * FROM historic_data WHERE ...")
+res <- dbSendQuery(data$con, "SELECT * FROM historic_data")
+data$hist <- tibble::tibble(dbFetch(res))
+# Clear the result
 # dbClearResult(res)
-
-# # Clear the result
-# dbClearResult(res)
-#
 # # Disconnect from the database
 # dbDisconnect(con)
-
-  })
+})
 
 # load data from database
 # data$path <- 'data/Vereinfachtes_Verfahren_ab_2019.xlsx'
@@ -225,12 +227,9 @@ wb[['duplicates']] <- openxlsx::createWorkbook()
   # save total data to excel (restricted to one click)
   observeEvent(input$transfer, {
     if (input$transfer == 1) {
-
-   # wb <- openxlsx::createWorkbook()
-    # openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
-    # openxlsx::writeData(wb, sheet = 'Sendungen', x = data$all, startCol = 1, startRow = 1)
-    # openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
-      saveRDS(data$all, file = "./data/historic_data.rds")
+      DBI::dbWriteTable(data$con, 'historic_data', data$new,append=TRUE, row.names=FALSE)
+      dbDisconnect(data$con)
+    #   saveRDS(data$all, file = "./data/historic_data.rds")
       }
   })
 

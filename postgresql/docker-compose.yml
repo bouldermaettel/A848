@@ -11,7 +11,7 @@ networks:
 
 services:
   db:
-    container_name: postgres_container
+    container_name: postgres-container
     image: postgres
     volumes:
       - pg-data:/var/lib/postgresql/data
@@ -19,12 +19,23 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
-      POSTGRES_DB: illegal-deliveries
+      POSTGRES_DB: postgres
     networks:
       customnetwork:
         ipv4_address: 172.20.0.6
     ports:
-      - "5432:5432"
+      - 5432:5432
+  duplicate-finder:
+    container_name: duplicate-finder
+    image: duplicate-finder
+    ports:
+      - 3838:3838
+    networks:
+      customnetwork:
+    depends_on:
+      - db
+
+
 #  pgadmin:
 #    container_name: pgadmin4_container
 #    image: dpage/pgadmin4
@@ -36,6 +47,6 @@ services:
 #      - "5050:80"
 volumes:
   pg-data:
-
+# docker kill $(docker ps -q)
 # start with: ~/postgres $ docker-compose up
 # stop with: ~/postgres $ docker-compose down

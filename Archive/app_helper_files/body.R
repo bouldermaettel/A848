@@ -11,8 +11,8 @@ tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "app.css")),
 
 tabItems(
 #### Tab data
-tabItem(tabName = "data",
-  DTOutput("data", width = '100%' )),
+tabItem(tabName = "../../data",
+  DTOutput("../../data", width = '100%' )),
 
 ### Tab unique
 tabItem(tabName = "unique",

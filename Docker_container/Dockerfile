@@ -4,11 +4,13 @@ FROM openanalytics/r-base
 MAINTAINER Tobias Verbeke "tobias.verbeke@openanalytics.eu"
 
 # system libraries of general use
+# libcairo2-dev for RpostgreSQL package
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
     pandoc-citeproc \
     libcurl4-gnutls-dev \
+    libpq-dev \
     libcairo2-dev \
     libxt-dev \
     libssl-dev \
@@ -22,7 +24,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # install packages
-RUN R -e "install.packages(c('shiny', 'rmarkdown', 'DT', 'data.table','shinythemes' ,'shinyWidgets', 'DT', 'tidyverse', 'shinydashboard', 'shinydashboardPlus','data.table', 'fresh','shinyjs', 'shinyBS','openxlsx'), repos='https://cloud.r-project.org/')"
+RUN R -e "install.packages(c('shiny', 'RPostgreSQL', 'rmarkdown', 'DT', 'data.table','shinythemes' ,'shinyWidgets', 'DT', 'tidyverse', 'shinydashboard', 'shinydashboardPlus','data.table', 'fresh','shinyjs', 'shinyBS','openxlsx'), repos='https://cloud.r-project.org/')"
 
 #'dplyr','tibble','readr'
 ## install dependencies if required
@@ -50,16 +52,16 @@ COPY Rprofile.site /usr/lib/R/etc/
 #COPY www /root/www/
 
 EXPOSE 3838
+EXPOSE 5432
 
 CMD ["R", "-e", "shiny::runApp('/root/app')"]
 
 
 # docker build -t duplicate-finder .
 # docker run -it -p 3838:3838 duplicate-finder
+# docker kill $(docker ps -q)
 
-# docker network create virtual-net
-# docker build . -t sp-example
-# docker run -d -v /var/run/docker.sock:/var/run/docker.sock --net virtual-net -p 8080:8080 sp-example
+# docker run -d -v /var/run/docker.sock:/var/run/docker.sock --net sp-net -p 8080:8080 sp-built
 # bouldermaettel@bouldermaettelsZBOOK:~/PycharmProjects/A848/Docker_container$ R -e "shiny::runApp('app')"
 
 # docker tag duplicate-finder:latest bouldermaettel/dupliate-finder:latest
