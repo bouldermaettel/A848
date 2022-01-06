@@ -20,50 +20,21 @@ options(shiny.maxRequestSize=50000*1024^2)
 
   # load data from database
 observe({
-
-
 pgdrv <- dbDriver(drvName = "PostgreSQL")
-  ## accessing database from host
-  # data$con <-DBI::dbConnect(pgdrv,
-  #                   dbname="postgres",
-  #                   host="172.20.0.6", port=5432,
-  #                   user = 'root',
-  #                   password = 'root')
-
-data$con <-DBI::dbConnect(pgdrv,
+con <-DBI::dbConnect(pgdrv,
                     dbname="postgres",
                     host="db", port=5432,
                     user = 'root',
                     password = 'root')
-
-# DBI::dbWriteTable(con, 'historic_data', data, row.names = FALSE)
-# DBI::dbRemoveTable(con, 'historic_data')
-# dbListTables(con)
 #TODO: user input for filters (i.e. date filter)
-# res <- dbSendQuery(data$con, "SELECT * FROM historic_data WHERE ...")
-res <- dbSendQuery(data$con, "SELECT * FROM historic_data")
+res <- dbSendQuery(con, "SELECT * FROM historic_data")
 data$hist <- tibble::tibble(dbFetch(res))
-# Clear the result
-# dbClearResult(res)
-# # Disconnect from the database
-# dbDisconnect(con)
+  DBI::dbDisconnect(con)
 })
-
-# load data from database
-# data$path <- 'data/Vereinfachtes_Verfahren_ab_2019.xlsx'
-# observe({
-#   # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
-#   if (exists("/home/bouldermaettel/Documents/A848data/historic_data.rds")) {
-#       data <- tibble::tibble(readRDS(file = "data/performance_test.rds"))
-#   } else {
-#           data$hist <- tibble::tibble(readRDS(file = "./data/historic_data.rds"))
-#   }
-# })
-
-
 
 # import new file
 observe({
+    print(input$table_rows_selected)
   req(input$file_input)
   inFile <- input$file_input
   ext <- substrRight(inFile$datapath, 4)
@@ -209,9 +180,13 @@ wb[['duplicates']] <- openxlsx::createWorkbook()
     }
   } else if (input$tabs == 'unique') {
   groups <- paste0(input$grouping_vars, collapse='_')
-  sheet_name <- substr(paste(input$excel,'unique', groups, sep ='_'),1,31)
+  sheet_name <- substr(paste(input$excel,input$tabs, groups, sep ='_'),1,31)
   openxlsx::addWorksheet(wb[['duplicates']], sheetName = sheet_name)
   openxlsx::writeData(wb[['duplicates']], sheet = sheet_name, x = data$show_unique, startCol = 1, startRow = 1)
+  } else if (input$tabs == 'data') {
+  sheet_name <- substr(paste(input$excel,input$tabs, input$data_source, sep="_"),1,31)
+  openxlsx::addWorksheet(wb[['duplicates']], sheetName = sheet_name)
+  openxlsx::writeData(wb[['duplicates']], sheet = sheet_name, x = data$show, startCol = 1, startRow = 1)
   }
 })
 
@@ -227,8 +202,15 @@ wb[['duplicates']] <- openxlsx::createWorkbook()
   # save total data to excel (restricted to one click)
   observeEvent(input$transfer, {
     if (input$transfer == 1) {
-      DBI::dbWriteTable(data$con, 'historic_data', data$new,append=TRUE, row.names=FALSE)
-      dbDisconnect(data$con)
+      pgdrv <- dbDriver(drvName = "PostgreSQL")
+con <-DBI::dbConnect(pgdrv,
+                    dbname="postgres",
+                    host="db", port=5432,
+                    user = 'root',
+                    password = 'root')
+
+      DBI::dbWriteTable(con, 'historic_data', data$new,append=TRUE, row.names=FALSE)
+      DBI::dbDisconnect(con)
     #   saveRDS(data$all, file = "./data/historic_data.rds")
       }
   })

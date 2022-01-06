@@ -1,0 +1,24 @@
+modal_dialog <-
+  shiny::modalDialog(
+    title = "Edit the Table to your needs",
+    div(
+      class = "text-center",
+      div(
+     uiOutput("hot_rendered"),
+    )),
+    size = "l",
+    easyClose = TRUE,
+    footer = div(
+      class = "pull-right container",
+      shiny::actionButton(
+        inputId = "final_edit",
+        label = 'Save',
+        class = "btn-info"
+      ),
+      shiny::actionButton(
+        inputId = "dismiss_modal",
+        label = "Close",
+        class = "btn-danger"
+      )
+    )
+  )

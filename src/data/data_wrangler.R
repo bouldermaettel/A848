@@ -10,12 +10,12 @@ packagesToLoad <- c('dplyr', 'data.table', 'readxl')
 sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
 
 # def dataloader
-get_data <- function(path, sheet=NULL) {
-  if (!is.null(sheet)) {
-  return(readxl::read_xlsx(path=path,sheet=sheet) %>% data.table::data.table() %>% suppressWarnings())
-  } else {
-    return(data.table::fread(path))
-  }
+get_data <- function(path, sheet=NULL, range=NULL, col_types=NULL) {
+  # if (!is.null(sheet)) {
+  return(readxl::read_excel(path=path,sheet=sheet, range=range, col_types=col_types) %>% data.table::data.table() %>% suppressWarnings())
+  # } else {
+  #   return(data.table::fread(path))
+  # }
 }
 
 get_dups <- function(first_df, ...){

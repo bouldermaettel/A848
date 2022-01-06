@@ -1,6 +1,6 @@
 rm(list = ls())
 packagesToLoad <- c('shiny', 'shinythemes' ,'shinyWidgets', 'DT', 'dplyr', 'readxl', 'shinydashboard', 'shinydashboardPlus',
-                    'data.table', 'fresh','shinyjs', 'shinyBS', 'openxlsx')
+                    'data.table', 'fresh','shinyjs', 'shinyBS', 'openxlsx', 'rhandsontable')
 
 # do the loading and print wether the package is installed
 sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
@@ -11,8 +11,12 @@ addResourcePath('app.css', './www/app.css')
 
 source('./app_helper_files/radioTooltips.R')
 
-
 ui <- function(request) {
+      tags$style(
+      type = 'text/css',
+      '.modal-dialog { width: fit-content !important; }'
+    )
+
   dashboardPage(skin='red-light',
   dashboardHeader(title = div(img(src = 'A848_logo', height = "55px"),
                            style = "position: relative; margin: -3px 0px 0px -25px; display:left-align;"),
@@ -24,7 +28,8 @@ leftUi = tagList(
   bsTooltip(id='xlsx', 'download xlsx', placement = "bottom", trigger = "hover", options = NULL),
 
                 appButton(inputId = "excel", label = NULL, icon = icon("save")),
-                downloadButton("xlsx", NULL,block = F, style = "simple", size="lg")),
+                downloadButton("xlsx", NULL,block = F, style = "simple", size="lg"),
+                  appButton(inputId = "edit_table", label = NULL, icon = icon("edit"))),
 
  dropdownMenuOutput("taskMenu"),
  tags$li(a(href = 'http://www.swissmedic.ch', icon("home"), title = "Swissmedic Home"), class = "dropdown"),userOutput("user")
@@ -45,7 +50,8 @@ leftUi = tagList(
                  choices= c("Name", "Vorname", "Strasse", "PLZ"),
                  selected = c("Name", "Vorname", "Strasse", "PLZ"),
                  multiple =T, options = NULL),
-       fileInput('file_input', 'Choose file with data to be loaded', accept = c('.csv','.xlsx')),
+       fileInput('file_input', 'Choose file with data to be loaded', accept = c('.csv','.xlsx', '.xlsm')),
+    checkboxInput("showHot", "Show handsontable"),
              conditionalPanel("input.tabs == 'duplicates' | input.tabs == 'unique'",
                 selectizeInput("grouping_vars",label = 'Select vars for duplicates detection',
                  choices= c("Name", "Vorname", "Strasse", "PLZ"),
@@ -76,6 +82,7 @@ tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "app.css")),
 tabItems(
 #### Tab data
 tabItem(tabName = "data",
+                 # uiOutput("hot_rendered"),
   DTOutput("data", width = '100%' )),
 
 ### Tab unique
@@ -120,23 +127,30 @@ options(shiny.maxRequestSize=50000*1024^2)
 data$path <- './data/Vereinfachtes_Verfahren_ab_2019.xlsx'
 observe({
   # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
-    data$hist <- tibble::tibble(readRDS(file = "./data/performance_test.rds"))
+  #   data$hist <- tibble::tibble(readRDS(file = "./data/performance_test.rds"))
+    data$hist <- tibble::tibble(readRDS(file = "./data/data_test.rds"))
 
 })
 
 # import new file
-observe({
+observeEvent(input$file_input, {
   req(input$file_input)
   inFile <- input$file_input
   ext <- substrRight(inFile$datapath, 4)
-  if (ext == 'xlsx') {
-    data$new <-  tibble(get_data(inFile$datapath, sheet='Sendungen' ))
-  } else {
-    data$new <-  tibble(get_data(inFile$datapath))
-  }
-    data$all <- bind_rows(data$new, data$hist)
+  # if (ext == 'xlsm') {
+    data_temp <- tibble::tibble(get_data('/home/bouldermaettel/Desktop/Vereinfachtes_Verfahren.xlsx', 'Sendungen', range = cell_cols('A:P'), c("date", 'numeric', rep('text',3), 'numeric',rep('text',4),rep('date',4), 'text', 'text')))
+    # data <- tibble::tibble(data[5:nrow(data), ])
+    colnames(data_temp) <- c('Datum_Eingang', 'Nr.', 'Name', 'Vorname',	'Strasse', 	'PLZ',	'Ort',	'Kategorie', 'Herkunftsland', 'Zollstelle', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme', 'Zollfall_Nr',  'Bemerkungen')
+    data$new <- data_temp %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")
+  # } else {
+  #   data$new <-  tibble(get_data(inFile$datapath))
+  # }
 })
 
+
+  observe({
+        data$all <- bind_rows(data$new, data$hist)
+  })
     # choose output data for data tab
   observe({
     if (input$data_source == 'historic'){
@@ -149,9 +163,11 @@ observe({
   })
 
 observe({
+print(input$data_rows_selected)
+
 updateSelectizeInput(session, "columns",
            choices= colnames(data$hist),
-           selected = c('Name', 'Vorname'))
+           selected = colnames(data$hist))
 
 updateSelectizeInput(session, "grouping_vars",
            choices= colnames(data$hist),
@@ -235,8 +251,9 @@ observe({
 
 output$data <- renderDT({
   data$show %>%
-     datatable( options = list(searching = T,pageLength=20, c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+     datatable(options = list(searching = T,pageLength=20, c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
                filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
+                          # %>% formatDate( method = 'toLocaleDateString', params = c('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'))
 })
 
 output$dupl <- renderDT({
@@ -304,6 +321,77 @@ shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic",
 
     output$dirs <- renderText({
     paste(list.dirs('.', recursive=FALSE), collapse = ' | ')
+  })
+
+
+  ############################## experiment
+  source('./modal_dialog.R')
+
+observeEvent(input$edit_table, {
+    modal_dialog  %>% shiny::showModal()
+})
+
+
+  # observe({
+  #   print(jsonlite::fromJSON(rhandsontable(data$show[input$data_rows_selected,])$x$data))
+  # })
+
+# Handsontable:
+    observe({
+      req(input$data_rows_selected)
+if (length(input$data_rows_selected) > 0) {
+    if (!is.null(input$hot)) {
+    data$orig <- rhandsontable::hot_to_r(input$hot)
+            } else {
+      # new_df[['Datum Brief']] <- tibble::tibble(data.frame(data$new))
+      data$orig <- data$show[input$data_rows_selected,]  # %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.character)
+    }
+  data$displayed <- rhandsontable::rhandsontable(data$orig)
+  hands_on_table <- rhandsontable::rhandsontable(data$orig)
+  print(tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data)) )
+  data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))  # %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.character)
+}
+  })
+## new data
+#   observe({
+# print(data$show[input$data_rows_selected, c("Name", 'Vorname')])
+#     print(class(data$show))
+#     print('data.new')
+#     print(data$new[input$data_rows_selected, c("Name", 'Vorname')])
+#     print(class(data$new))
+#     print(data$updated)
+#     print(class(data$updated))
+#   })
+
+observeEvent(input$final_edit, {
+  new_data <- data$updated %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%m/%d/%Y")
+  new_data <- new_data %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")
+data$new[input$data_rows_selected,] <- new_data
+})
+
+# observeEvent(input$final_edit, {
+# data$new[input$data_rows_selected, c("Name", 'Vorname')] <- data$updated
+# })
+
+    # render the exlusion list table
+  output$hot <- rhandsontable::renderRHandsontable({
+    req(data$displayed)
+  return(data$displayed)
+  })
+
+    output$hot_rendered <- renderUI({
+        rHandsontableOutput("hot")
+    })
+    # output$hot <- renderRHandsontable({
+    #     rhandsontable(data$show[input$data_rows_selected,])
+    # })
+
+  ### remove edit modal when close button is clicked or submit button
+  shiny::observeEvent(input$dismiss_modal, {
+    shiny::removeModal()
+  })
+  shiny::observeEvent(input$final_edit, {
+    shiny::removeModal()
   })
 
     output$user <- renderUser({
