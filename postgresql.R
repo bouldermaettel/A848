@@ -34,3 +34,39 @@ data2[['row.names']] <- NULL
 
 # DBI::dbWriteTable(con, 'historic_data', data2,append=TRUE)
 # dbDisconnect(data$con)
+
+# library(magrittr)
+# library(randomNames)
+# df <- readRDS('./data/data_test.rds')
+df <- df  %>% mutate_at(vars('ID_SMC', 'Nr', 'PLZ'),  as.integer)
+head(df)
+saveRDS(df, './data/data_test.rds')
+
+# for (i in 1:10000) {
+#   if (i == 1){
+#     df_new <- df
+#   } else {
+#     df_new <-  dplyr::bind_rows(df, df_new)
+#   }
+# }
+# head(df_new)
+# df_new %>% dim()
+
+
+
+# df_new[['Vorname']] <- randomNames::randomNames(100000, ethnicity=5, which.names='first')
+# df_new[['Name']] <- randomNames::randomNames(100000, which.names='last')
+# df_new[['Strasse']] <- paste(randomNames::randomNames(100000, which.names='last'), sample(1:50, replace = T))
+# df_new[['ID_SMC']] <- rep(18168001,100000) - sample(1:100010, 100000, replace=FALSE)
+#
+# saveRDS(df_new, './data/data_test.rds')
+#
+# mock <- readxl::read_excel('./data/mock_data.xlsx')
+# mock[['Vorname']] <- randomNames::randomNames(20, which.names='first')
+# mock[['Name']] <- randomNames::randomNames(20, which.names='last')
+# mock[['Strasse']] <- paste(randomNames::randomNames(20, which.names='last'), sample.int(1:50, replace = T))
+#
+# wb <- openxlsx::createWorkbook()
+# openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
+# openxlsx::writeData(wb, sheet = 'Sendungen', x = mock, startCol = 1, startRow = 1)
+# openxlsx::saveWorkbook(wb,'./data/mock_data_2.xlsx')

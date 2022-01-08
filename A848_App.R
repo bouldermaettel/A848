@@ -11,6 +11,7 @@ addResourcePath('app.css', './www/app.css')
 
 source('./app_helper_files/radioTooltips.R')
 
+
 ui <- function(request) {
       tags$style(
       type = 'text/css',
@@ -130,6 +131,9 @@ observe({
   #   data$hist <- tibble::tibble(readRDS(file = "./data/performance_test.rds"))
     data$hist <- tibble::tibble(readRDS(file = "./data/data_test.rds"))
 
+  # saveRDS(data_temp, file = "./data/data_test.rds")
+    # saveRDS(hist, file = "./data/data_test.rds")
+
 })
 
 # import new file
@@ -138,13 +142,16 @@ observeEvent(input$file_input, {
   inFile <- input$file_input
   ext <- substrRight(inFile$datapath, 4)
   # if (ext == 'xlsm') {
-    data_temp <- tibble::tibble(get_data('/home/bouldermaettel/Desktop/Vereinfachtes_Verfahren.xlsx', 'Sendungen', range = cell_cols('A:P'), c("date", 'numeric', rep('text',3), 'numeric',rep('text',4),rep('date',4), 'text', 'text')))
-    # data <- tibble::tibble(data[5:nrow(data), ])
-    colnames(data_temp) <- c('Datum_Eingang', 'Nr.', 'Name', 'Vorname',	'Strasse', 	'PLZ',	'Ort',	'Kategorie', 'Herkunftsland', 'Zollstelle', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme', 'Zollfall_Nr',  'Bemerkungen')
-    data$new <- data_temp %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")
-  # } else {
-  #   data$new <-  tibble(get_data(inFile$datapath))
-  # }
+    data_temp <- tibble::tibble(get_data('/home/bouldermaettel/Desktop/Vereinfachtes_Verfahren.xlsx', 'Sendungen', range = cell_cols('A:P'), col_types = COLTYPES))
+  # define new column names (without ID, that need to be defined first)
+  colnames(data_temp) <- COLNAMES[2:length(COLNAMES)]
+  # choose right formats of columns
+  data_temp <- data_temp %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")  %>% mutate_at(vars('Nr', 'PLZ'),  as.integer)
+
+  # make an ID out of date as.numeric and three digit Nr
+  data_temp <- tibble::add_column(data_temp, ID_SMC = as.integer(paste0(as.numeric(data_temp$Datum_Eingang), sprintf("%03d",data_temp$Nr))), .before = 'Datum_Eingang')
+
+  data$new <- data_temp
 })
 
 
@@ -303,13 +310,9 @@ wb[['duplicates']] <- openxlsx::createWorkbook()
   }
 )
 
-  # save total data to excel (restricted to one click)
+  # save total data to rds file
   observeEvent(input$transfer, {
     if (input$transfer == 1) {
-    # wb <- openxlsx::createWorkbook()
-    # openxlsx::addWorksheet(wb, sheetName = 'Sendungen')
-    # openxlsx::writeData(wb, sheet = 'Sendungen', x = data$all, startCol = 1, startRow = 1)
-    # openxlsx::saveWorkbook(wb, file = data$path, overwrite = TRUE)
       saveRDS(data$all, file = "./data/historic_data.rds")
       }
   })
@@ -324,17 +327,13 @@ shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic",
   })
 
 
-  ############################## experiment
+  ############################## experimental extension
   source('./modal_dialog.R')
 
 observeEvent(input$edit_table, {
     modal_dialog  %>% shiny::showModal()
 })
 
-
-  # observe({
-  #   print(jsonlite::fromJSON(rhandsontable(data$show[input$data_rows_selected,])$x$data))
-  # })
 
 # Handsontable:
     observe({
@@ -343,35 +342,29 @@ if (length(input$data_rows_selected) > 0) {
     if (!is.null(input$hot)) {
     data$orig <- rhandsontable::hot_to_r(input$hot)
             } else {
-      # new_df[['Datum Brief']] <- tibble::tibble(data.frame(data$new))
-      data$orig <- data$show[input$data_rows_selected,]  # %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.character)
+
+      data$orig <- data$show[input$data_rows_selected,]
     }
   data$displayed <- rhandsontable::rhandsontable(data$orig)
   hands_on_table <- rhandsontable::rhandsontable(data$orig)
   print(tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data)) )
-  data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))  # %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.character)
+  data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))
 }
   })
-## new data
-#   observe({
-# print(data$show[input$data_rows_selected, c("Name", 'Vorname')])
-#     print(class(data$show))
-#     print('data.new')
-#     print(data$new[input$data_rows_selected, c("Name", 'Vorname')])
-#     print(class(data$new))
-#     print(data$updated)
-#     print(class(data$updated))
-#   })
 
+## this one worked!
+# observeEvent(input$final_edit, {
+#   new_data <- data$updated %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%m/%d/%Y")
+#   new_data <- new_data %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")
+# data$new[input$data_rows_selected,] <- new_data
+# })
+
+# this one worked!
 observeEvent(input$final_edit, {
   new_data <- data$updated %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%m/%d/%Y")
   new_data <- new_data %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")
 data$new[input$data_rows_selected,] <- new_data
 })
-
-# observeEvent(input$final_edit, {
-# data$new[input$data_rows_selected, c("Name", 'Vorname')] <- data$updated
-# })
 
     # render the exlusion list table
   output$hot <- rhandsontable::renderRHandsontable({

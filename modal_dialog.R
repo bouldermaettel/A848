@@ -14,7 +14,7 @@ modal_dialog <-
         inputId = "final_edit",
         label = 'Save',
         icon = shiny::icon("edit"),
-        class = "btn-info"
+        class = "btn-success"
       ),
       shiny::actionButton(
         inputId = "dismiss_modal",
