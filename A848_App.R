@@ -24,6 +24,7 @@ ui <- function(request) {
                            titleWidth=300,
 leftUi = tagList(
   appButton(inputId = "hide", label = NULL, icon = icon("eye-slash")),
+    appButton(inputId = "fetchData", label = NULL, icon = icon("upload")),
   bsTooltip(id='hide', 'Click to hide the header', placement = "bottom", trigger = "hover", options = NULL),
    bsTooltip(id='excel', 'Add current analysis to excel tab', placement = "bottom", trigger = "hover", options = NULL),
   bsTooltip(id='xlsx', 'download xlsx', placement = "bottom", trigger = "hover", options = NULL),
@@ -45,6 +46,7 @@ leftUi = tagList(
               badgeLabel = "analysis", badgeColor = "green"),
     menuItem("Duplicates", icon = icon('line-chart'), tabName = 'duplicates',
              badgeLabel = "analysis", badgeColor = "green"),
+
   shinyWidgets::awesomeRadio('data_source', 'Choose data source', choices = c("historic"),
                              selected = "historic", status = "danger"),
                 selectizeInput("columns",label = "Choose columns to be shown",
@@ -107,7 +109,7 @@ tabItem(tabName = "duplicates",
 server <- function(input, output, session){
 variable <- reactiveValues()
 data <- reactiveValues()
-wb <- reactiveValues()
+wb <- reactiveValues(upload = 0)
 
 source('./src/data/data_wrangler.R')
 
@@ -127,13 +129,13 @@ options(shiny.maxRequestSize=50000*1024^2)
 # load data from database
 data$path <- './data/Vereinfachtes_Verfahren_ab_2019.xlsx'
 observe({
+    if (wb$upload == 0) {
   # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
   #   data$hist <- tibble::tibble(readRDS(file = "./data/performance_test.rds"))
-    data$hist <- tibble::tibble(readRDS(file = "./data/data_test.rds"))
+    data$hist <- tibble::tibble(readRDS(file = "./data/data_test.rds")) %>% arrange(desc(ID_SMC))
+  wb$upload <- 1
 
-  # saveRDS(data_temp, file = "./data/data_test.rds")
-    # saveRDS(hist, file = "./data/data_test.rds")
-
+    }
 })
 
 # import new file
@@ -149,15 +151,16 @@ observeEvent(input$file_input, {
   data_temp <- data_temp %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")  %>% mutate_at(vars('Nr', 'PLZ'),  as.integer)
 
   # make an ID out of date as.numeric and three digit Nr
-  data_temp <- tibble::add_column(data_temp, ID_SMC = as.integer(paste0(as.numeric(data_temp$Datum_Eingang), sprintf("%03d",data_temp$Nr))), .before = 'Datum_Eingang')
+  data_temp <- tibble::add_column(data_temp, ID_SMC = as.integer(paste0(as.numeric(data_temp$Datum_Eingang), sprintf("%03d",data_temp$Nr))), .before = 'Datum_Eingang') %>% arrange(desc(ID_SMC))
+
+  # new_data <- data_temp[data_temp$ID_SMC %in% list(18975020,18268001, 18268018 ,18268017),] %>% arrange(ID_SMC)
 
   data$new <- data_temp
+
+    data$all <- bind_rows(data$new, data$hist)
 })
 
 
-  observe({
-        data$all <- bind_rows(data$new, data$hist)
-  })
     # choose output data for data tab
   observe({
     if (input$data_source == 'historic'){
@@ -170,7 +173,6 @@ observeEvent(input$file_input, {
   })
 
 observe({
-print(input$data_rows_selected)
 
 updateSelectizeInput(session, "columns",
            choices= colnames(data$hist),
@@ -347,8 +349,8 @@ if (length(input$data_rows_selected) > 0) {
     }
   data$displayed <- rhandsontable::rhandsontable(data$orig)
   hands_on_table <- rhandsontable::rhandsontable(data$orig)
-  print(tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data)) )
   data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))
+
 }
   })
 
@@ -359,11 +361,25 @@ if (length(input$data_rows_selected) > 0) {
 # data$new[input$data_rows_selected,] <- new_data
 # })
 
+
 # this one worked!
 observeEvent(input$final_edit, {
+
+  # two date formatting steps need for copatibility with r tibble and DT
   new_data <- data$updated %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%m/%d/%Y")
-  new_data <- new_data %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")
-data$new[input$data_rows_selected,] <- new_data
+  new_data <- new_data %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d") %>% arrange(desc(ID_SMC))
+
+  if (input$data_source == 'historic'){
+      data$hist <- data$hist %>% arrange(desc(ID_SMC))
+      data$hist[data$hist$ID_SMC %in% data$updated$ID_SMC, ] <- new_data
+  } else if (input$data_source == 'new') {
+      data$new <- data$new %>% arrange(desc(ID_SMC))
+      data$new[data$new$ID_SMC %in% data$updated$ID_SMC, ] <- new_data
+  } else if (input$data_source == 'all' | input$data_source == 'historic & new') {
+      data$all <- data$all %>% arrange(desc(ID_SMC))
+      data$all[data$all$ID_SMC %in% data$updated$ID_SMC, ] <- new_data
+  }
+
 })
 
     # render the exlusion list table

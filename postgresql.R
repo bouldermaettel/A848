@@ -51,13 +51,13 @@ saveRDS(df, './data/data_test.rds')
 # }
 # head(df_new)
 # df_new %>% dim()
-
+df$ID_SMC %>% unique() %>% length()
 
 
 # df_new[['Vorname']] <- randomNames::randomNames(100000, ethnicity=5, which.names='first')
 # df_new[['Name']] <- randomNames::randomNames(100000, which.names='last')
 # df_new[['Strasse']] <- paste(randomNames::randomNames(100000, which.names='last'), sample(1:50, replace = T))
-# df_new[['ID_SMC']] <- rep(18168001,100000) - sample(1:100010, 100000, replace=FALSE)
+# df[['ID_SMC']] <- c(rep(18168001,100000) - sample(1:100010, 100000, replace=FALSE))
 #
 # saveRDS(df_new, './data/data_test.rds')
 #
