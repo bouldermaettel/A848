@@ -38,7 +38,8 @@ data2[['row.names']] <- NULL
 # library(magrittr)
 # library(randomNames)
 # df <- readRDS('./data/data_test.rds')
-df <- df  %>% mutate_at(vars('ID_SMC', 'Nr', 'PLZ'),  as.integer)
+df <- df  %>% mutate_at(vars('ID_SMC', 'Nr', 'PLZ', 'n'),  as.integer)
+df$n <- NA
 head(df)
 saveRDS(df, './data/data_test.rds')
 
@@ -52,6 +53,15 @@ saveRDS(df, './data/data_test.rds')
 # head(df_new)
 # df_new %>% dim()
 df$ID_SMC %>% unique() %>% length()
+
+dates <- (rep(as.Date("2020-01-07"),100000) - sample(1:100010, 100000, replace=FALSE))
+
+df$Datum_Brief <- dates
+df$Frist <- dates + 90
+df$Datum_Vernichtung <- dates + 100
+df$Zollfall_Nr <- rep(c(rep(NA,99), paste0('VK_', sample(10000:99000, 1, replace = FALSE))),1000)
+
+df$Stellungnahme <- dates + 200
 
 
 # df_new[['Vorname']] <- randomNames::randomNames(100000, ethnicity=5, which.names='first')

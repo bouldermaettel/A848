@@ -109,7 +109,7 @@ tabItem(tabName = "duplicates",
 server <- function(input, output, session){
 variable <- reactiveValues()
 data <- reactiveValues()
-wb <- reactiveValues(upload = 0)
+wb <- reactiveValues(upload = 0, edit = T)
 
 source('./src/data/data_wrangler.R')
 
@@ -144,7 +144,7 @@ observeEvent(input$file_input, {
   inFile <- input$file_input
   ext <- substrRight(inFile$datapath, 4)
   # if (ext == 'xlsm') {
-    data_temp <- tibble::tibble(get_data('/home/bouldermaettel/Desktop/Vereinfachtes_Verfahren.xlsx', 'Sendungen', range = cell_cols('A:P'), col_types = COLTYPES))
+    data_temp <- tibble::tibble(get_data('/home/bouldermaettel/Desktop/Vereinfachtes_Verfahren.xlsx', 'Sendungen', range = cell_cols('A:Q'), col_types = COLTYPES))
   # define new column names (without ID, that need to be defined first)
   colnames(data_temp) <- COLNAMES[2:length(COLNAMES)]
   # choose right formats of columns
@@ -235,9 +235,11 @@ observeEvent(input$calc, {
 
 # choose output data for dupl tab
 observe({
+
   if (input$calc_mode == 'exact'){
     data$show_dupl <- data$dupl[,input$columns]
   } else {
+      req(data$dupl_fuzzy)
     data$show_dupl <- data$dupl_fuzzy[,input$columns]
   }
 })
@@ -260,20 +262,23 @@ observe({
 
 output$data <- renderDT({
   data$show %>%
-     datatable(options = list(searching = T,pageLength=20, c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
-               filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
+     datatable(options = list(searching = T, pageLength=20, c(10, 20, 30, 50, 100, 200),
+                              columnDefs = list(list(className = 'dt-left', targets = '_all')), autoWidth = TRUE, scrollx=TRUE),
+               filter = list(position = 'top', clear = TRUE), fillContainer = FALSE)
                           # %>% formatDate( method = 'toLocaleDateString', params = c('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'))
 })
 
 output$dupl <- renderDT({
   data$show_dupl %>%
-    datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+    datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200),
+                              columnDefs = list(list(className = 'dt-left', targets = '_all')), autoWidth = TRUE, scrollx=TRUE),
              filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
   output$unique <- renderDT({
   data$show_unique %>%
-    datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200), autoWidth = TRUE, scrollx=TRUE),
+    datatable( options = list(searching = T,pageLength=20, lengthMenu = c(10, 20, 30, 50, 100, 200),
+                              columnDefs = list(list(className = 'dt-left', targets = '_all')), autoWidth = TRUE, scrollx=TRUE),
              filter = list( position = 'top', clear = TRUE ), fillContainer = FALSE)
 })
 
@@ -333,26 +338,82 @@ shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic",
   source('./modal_dialog.R')
 
 observeEvent(input$edit_table, {
-    modal_dialog  %>% shiny::showModal()
+    modal_dialog %>% shiny::showModal()
 })
 
-
-# Handsontable:
-    observe({
-      req(input$data_rows_selected)
-if (length(input$data_rows_selected) > 0) {
-    if (!is.null(input$hot)) {
-    data$orig <- rhandsontable::hot_to_r(input$hot)
-            } else {
-
-      data$orig <- data$show[input$data_rows_selected,]
+# Handsontable Data:
+observe({
+  req(input$data_rows_selected)
+  if ((input$tabs == 'data') & (length(input$data_rows_selected) > 0)) {
+    if (!is.null(input$hot_data)){
+    data$orig <- rhandsontable::hot_to_r(input$hot_data)
+    } else {
+      if (input$data_source == 'historic'){
+      data$orig <- data$hist[input$data_rows_selected,]
+    } else if (input$data_source == 'new') {
+      data$orig <- data$new[input$data_rows_selected,]
+    } else if (input$data_source == 'all' | input$data_source == 'historic & new') {
+      data$orig <- data$all[input$data_rows_selected,]
     }
-  data$displayed <- rhandsontable::rhandsontable(data$orig)
-  hands_on_table <- rhandsontable::rhandsontable(data$orig)
+      }
+  }
+  data$displayed <- rhandsontable::rhandsontable(data$orig)  %>%  hot_cols( columnSorting=TRUE)
+  hands_on_table <- rhandsontable::rhandsontable(data$orig) %>%  hot_cols( columnSorting=TRUE)
   data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))
-
-}
   })
+
+  # Handsontable Duplicates:
+observe({
+  req(input$dupl_rows_selected)
+  if ((input$tabs == 'duplicates') & (length(input$dupl_rows_selected) > 0)) {
+    if (!is.null(input$hot_dupl)){
+    data$orig <- rhandsontable::hot_to_r(input$hot_dupl)
+    } else {
+      if (input$calc_mode == 'exact'){
+        data$orig <- data$dupl[input$dupl_rows_selected,]
+      } else {
+            req(data$dupl_fuzzy, input$dupl_rows_selected)
+        data$orig <- data$dupl_fuzzy[input$dupl_rows_selected,]
+      }
+    }
+  }
+  data$displayed <- rhandsontable::rhandsontable(data$orig) %>%  hot_cols( columnSorting=TRUE)
+  hands_on_table <- rhandsontable::rhandsontable(data$orig) %>%  hot_cols( columnSorting=TRUE)
+  data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))
+  })
+
+  #   observe({
+  #
+  #    print(input$hot)
+  #
+  #   if (!is.null(input$hot)){
+  #   data$orig <- rhandsontable::hot_to_r(input$hot)
+  #           } else {
+  #
+  #     if (input$tabs == 'data') {
+  #             if (input$data_source == 'historic'){
+  #                   data$orig <- data$hist[input$data_rows_selected,]
+  #             } else if (input$data_source == 'new') {
+  #                   data$orig <- data$new[input$data_rows_selected,]
+  #             } else if (input$data_source == 'all' | input$data_source == 'historic & new') {
+  #                 data$orig <- data$all[input$data_rows_selected,]
+  #             }
+  #
+  #     } else if (input$tabs == 'unique') {
+  #             data$orig <- data$unique[input$unique_rows_selected,]
+  #     } else if (input$tabs == 'duplicates') {
+  #           if (input$calc_mode == 'exact'){
+  #              data$orig <- data$dupl[input$dupl_rows_selected,]
+  #           } else {
+  #                 data$orig <- data$dupl_fuzzy[input$dupl_rows_selected,]
+  #           }
+  #     }
+  #   }
+  #
+  # data$displayed <- rhandsontable::rhandsontable(data$orig)
+  # hands_on_table <- rhandsontable::rhandsontable(data$orig)
+  # data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))
+  # })
 
 ## this one worked!
 # observeEvent(input$final_edit, {
@@ -361,8 +422,6 @@ if (length(input$data_rows_selected) > 0) {
 # data$new[input$data_rows_selected,] <- new_data
 # })
 
-
-# this one worked!
 observeEvent(input$final_edit, {
 
   # two date formatting steps need for copatibility with r tibble and DT
@@ -376,20 +435,37 @@ observeEvent(input$final_edit, {
       data$new <- data$new %>% arrange(desc(ID_SMC))
       data$new[data$new$ID_SMC %in% data$updated$ID_SMC, ] <- new_data
   } else if (input$data_source == 'all' | input$data_source == 'historic & new') {
+
+      data$hist <- data$hist %>% arrange(desc(ID_SMC))
+      data$hist[data$hist$ID_SMC %in% data$updated$ID_SMC, ] <- new_data[data$updated$ID_SMC %in% data$hist$ID_SMC, ]
+
+      data$new <- data$new %>% arrange(desc(ID_SMC))
+      data$new[data$new$ID_SMC %in% data$updated$ID_SMC, ] <- new_data[data$updated$ID_SMC %in% data$new$ID_SMC, ]
+
       data$all <- data$all %>% arrange(desc(ID_SMC))
       data$all[data$all$ID_SMC %in% data$updated$ID_SMC, ] <- new_data
   }
 
 })
 
-    # render the exlusion list table
-  output$hot <- rhandsontable::renderRHandsontable({
+    # render outputs
+  output$hot_data <- rhandsontable::renderRHandsontable({
     req(data$displayed)
-  return(data$displayed)
+    return(data$displayed)
+  })
+
+    output$hot_dupl <- rhandsontable::renderRHandsontable({
+    req(data$displayed)
+    return(data$displayed)
   })
 
     output$hot_rendered <- renderUI({
-        rHandsontableOutput("hot")
+      if (input$tabs == 'data') {
+          rHandsontableOutput("hot_data")
+      } else {
+          rHandsontableOutput("hot_dupl")
+      }
+
     })
     # output$hot <- renderRHandsontable({
     #     rhandsontable(data$show[input$data_rows_selected,])

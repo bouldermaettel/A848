@@ -1,36 +1,113 @@
 library(shiny)
 library(rhandsontable)
+library(dplyr)
+library(magrittr)
 
-ui <- fluidPage(
-    tags$style(HTML(".datepicker {z-index:99999 !important;}")),
 
-    helpText("Click this first. Date picker should work fine."),
-    actionButton("show", "Show modal"),
-    hr(),
-    helpText("Now click below to render the handsontable. When showing the modal again, the date picker shows up behind the modal."),
-    checkboxInput("showHot", "Show handsontable"),
-    uiOutput("hot_rendered")
+options(shiny.reactlog = TRUE)
+
+
+df.0 <- data.frame(
+  X1 = rep(NA_integer_, 10),
+  X2 = NA_integer_,
+  stringsAsFactors = F)
+
+
+df.1 <- data.frame(
+  X1 = rep(1, 10),
+  X2 = c(-10:-1),
+  stringsAsFactors = F)
+
+
+
+calc.df <- function(fdf){
+  # print(paste('calc', Sys.time()))
+
+  fdf <- fdf %>%
+    mutate(
+      Y1 = X1 + X2,
+      Y2 = ifelse(Y1 > 10, 10, 20)
     )
 
-server <- function(input, output, session) {
-    # Modal:
-    observeEvent(input$show, {
-        showModal(
-            modalDialog(
-                title = "My Modal",
-                dateInput("date", "Choose date")
-            )
-        )
-    })
-    # Handsontable:
-    output$hot_rendered = renderUI({
-        req(input$showHot==T)
-        rHandsontableOutput("hot")
-    })
-    output$hot = renderRHandsontable({
-        req(input$showHot==T)
-        rhandsontable(head(iris))
-    })
+  return(fdf)
 }
 
-shinyApp(ui, server)
+
+ui <- shinyUI(
+  basicPage(
+    actionButton("ab_reset_1", "Reset"),
+    actionButton("ab_reset_2", "Get some data"),
+    rHandsontableOutput("hot.df")
+  )
+)
+
+
+
+server <- function(input, output, session) {
+  values <- reactiveValues(
+    hot_df = df.0,
+    reset_b1 = 0,
+    reset_b2 = 0,
+    reset_val = 0
+  )
+
+
+  df.hot <- reactive({
+    print(paste('df', Sys.time()))
+
+    df <- NULL
+
+    if(!is.null(input$hot.df)){
+      df <- hot_to_r(input$hot.df)
+    } else if(!is.null(isolate(values$hot_df))) {
+      df <- isolate(values$hot_df)
+    }
+
+    if(!is.null(df)){
+      df <- calc.df(df)
+      values$hot_df <- df
+    }
+
+    df
+  }) %>% debounce(1000)
+
+
+  output$hot.df <- renderRHandsontable({
+    print(paste('hot', Sys.time()))
+
+    input$ab_reset_1
+    input$ab_reset_2
+
+    if (isolate(values$reset_val)) {
+      df <- values$hot_df
+    } else {
+      df <- df.hot()
+      values$reset_val <- 0
+    }
+
+    if(!is.null(df)){
+      rhandsontable(df, useTypes = TRUE)
+    }
+  }) #%>% throttle(1000)
+
+
+  observeEvent(input$ab_reset_1, {
+    print(paste('reset 1', Sys.time()))
+    values$hot_df <- calc.df(df.0)
+    values$reset_val <- 1
+  })
+
+
+  observeEvent(input$ab_reset_2, {
+    print(paste('reset 2', Sys.time()))
+    values$hot_df <- calc.df(df.1)
+    values$reset_val <- 1
+  })
+
+
+  session$onSessionEnded(function() {
+    stopApp()
+  })
+}
+
+shinyApp(ui = ui, server = server, options = list(launch.browser = TRUE))

@@ -9,8 +9,8 @@ packagesToLoad <- c('dplyr', 'data.table', 'readxl')
 # # do the loading and print wether the package is installed
 sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
 
-COLNAMES <- c('ID_SMC', 'Datum_Eingang', 'Nr', 'Name', 'Vorname',	'Strasse', 	'PLZ',	'Ort',	'Kategorie', 'Herkunftsland', 'Zollstelle', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme', 'Zollfall_Nr',  'Bemerkungen')
-COLTYPES <- c("date", 'numeric', rep('text',3), 'numeric',rep('text',4),rep('date',4), 'text', 'text')
+COLNAMES <- c('ID_SMC', 'Datum_Eingang', 'Nr', 'Name', 'Vorname',	'Strasse', 	'PLZ',	'Ort',	'Kategorie', 'Herkunftsland', 'Zollstelle', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme', 'Zollfall_Nr',  'Bemerkungen', 'n')
+COLTYPES <- c("date", 'numeric', rep('text',3), 'numeric',rep('text',4),rep('date',4), 'text', 'text', 'numeric')
 
 
 # def dataloader
