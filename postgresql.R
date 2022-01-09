@@ -39,7 +39,7 @@ data2[['row.names']] <- NULL
 # library(randomNames)
 # df <- readRDS('./data/data_test.rds')
 df <- df  %>% mutate_at(vars('ID_SMC', 'Nr', 'PLZ', 'n'),  as.integer)
-df$n <- NA
+df$n <- NULL
 head(df)
 saveRDS(df, './data/data_test.rds')
 

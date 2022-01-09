@@ -1,6 +1,6 @@
 rm(list = ls())
 packagesToLoad <- c('shiny', 'shinythemes' ,'shinyWidgets', 'DT', 'dplyr', 'readxl', 'shinydashboard', 'shinydashboardPlus',
-                    'data.table', 'fresh','shinyjs', 'shinyBS', 'openxlsx', 'rhandsontable')
+                    'data.table', 'fresh','shinyjs', 'shinyBS', 'openxlsx', 'rhandsontable', 'excelR')
 
 # do the loading and print wether the package is installed
 sapply(packagesToLoad, function(x) {require(x,character.only=TRUE)} )
@@ -24,7 +24,7 @@ ui <- function(request) {
                            titleWidth=300,
 leftUi = tagList(
   appButton(inputId = "hide", label = NULL, icon = icon("eye-slash")),
-    appButton(inputId = "fetchData", label = NULL, icon = icon("upload")),
+    # appButton(inputId = "fetchData", label = NULL, icon = icon("upload")),
   bsTooltip(id='hide', 'Click to hide the header', placement = "bottom", trigger = "hover", options = NULL),
    bsTooltip(id='excel', 'Add current analysis to excel tab', placement = "bottom", trigger = "hover", options = NULL),
   bsTooltip(id='xlsx', 'download xlsx', placement = "bottom", trigger = "hover", options = NULL),
@@ -54,7 +54,7 @@ leftUi = tagList(
                  selected = c("Name", "Vorname", "Strasse", "PLZ"),
                  multiple =T, options = NULL),
        fileInput('file_input', 'Choose file with data to be loaded', accept = c('.csv','.xlsx', '.xlsm')),
-    checkboxInput("showHot", "Show handsontable"),
+    # checkboxInput("showHot", "Show handsontable"),
              conditionalPanel("input.tabs == 'duplicates' | input.tabs == 'unique'",
                 selectizeInput("grouping_vars",label = 'Select vars for duplicates detection',
                  choices= c("Name", "Vorname", "Strasse", "PLZ"),
@@ -85,7 +85,6 @@ tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "app.css")),
 tabItems(
 #### Tab data
 tabItem(tabName = "data",
-                 # uiOutput("hot_rendered"),
   DTOutput("data", width = '100%' )),
 
 ### Tab unique
@@ -133,6 +132,7 @@ observe({
   # data$hist <- tibble::tibble(get_data(path = data$path, sheet = 'Sendungen'))
   #   data$hist <- tibble::tibble(readRDS(file = "./data/performance_test.rds"))
     data$hist <- tibble::tibble(readRDS(file = "./data/data_test.rds")) %>% arrange(desc(ID_SMC))
+      # data$hist <- data$hist %>% mutate_at(vars('n'), as.character)
   wb$upload <- 1
 
     }
@@ -148,7 +148,7 @@ observeEvent(input$file_input, {
   # define new column names (without ID, that need to be defined first)
   colnames(data_temp) <- COLNAMES[2:length(COLNAMES)]
   # choose right formats of columns
-  data_temp <- data_temp %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")  %>% mutate_at(vars('Nr', 'PLZ'),  as.integer)
+  data_temp <- data_temp %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%d/%m/%Y")  %>% mutate_at(vars('Nr', 'PLZ'),  as.integer)
 
   # make an ID out of date as.numeric and three digit Nr
   data_temp <- tibble::add_column(data_temp, ID_SMC = as.integer(paste0(as.numeric(data_temp$Datum_Eingang), sprintf("%03d",data_temp$Nr))), .before = 'Datum_Eingang') %>% arrange(desc(ID_SMC))
@@ -334,142 +334,87 @@ shinyWidgets::updateAwesomeRadio(session, 'data_source', choices = c("historic",
   })
 
 
-  ############################## experimental extension
-  source('./modal_dialog.R')
+############################## Excel to edit data!
+  source('./modal_dialog2.R')
 
 observeEvent(input$edit_table, {
     modal_dialog %>% shiny::showModal()
 })
 
-# Handsontable Data:
+# Excel input$tabs == 'data':
 observe({
   req(input$data_rows_selected)
   if ((input$tabs == 'data') & (length(input$data_rows_selected) > 0)) {
-    if (!is.null(input$hot_data)){
-    data$orig <- rhandsontable::hot_to_r(input$hot_data)
-    } else {
       if (input$data_source == 'historic'){
-      data$orig <- data$hist[input$data_rows_selected,]
+      data$orig <- data$hist[input$data_rows_selected,input$columns]
     } else if (input$data_source == 'new') {
-      data$orig <- data$new[input$data_rows_selected,]
+      data$orig <- data$new[input$data_rows_selected,input$columns]
     } else if (input$data_source == 'all' | input$data_source == 'historic & new') {
-      data$orig <- data$all[input$data_rows_selected,]
+      data$orig <- data$all[input$data_rows_selected,input$columns]
     }
       }
-  }
-  data$displayed <- rhandsontable::rhandsontable(data$orig)  %>%  hot_cols( columnSorting=TRUE)
-  hands_on_table <- rhandsontable::rhandsontable(data$orig) %>%  hot_cols( columnSorting=TRUE)
-  data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))
   })
 
-  # Handsontable Duplicates:
+  # Excel input$tabs == 'unique':
+observe({
+  req(input$unique_rows_selected)
+  if ((input$tabs == 'unique') & (length(input$unique_rows_selected) > 0)) {
+      data$orig <- data$unique[input$unique_rows_selected,input$columns]
+      }
+  })
+
+  # Excel input$tabs == 'duplicates':
 observe({
   req(input$dupl_rows_selected)
   if ((input$tabs == 'duplicates') & (length(input$dupl_rows_selected) > 0)) {
-    if (!is.null(input$hot_dupl)){
-    data$orig <- rhandsontable::hot_to_r(input$hot_dupl)
-    } else {
-      if (input$calc_mode == 'exact'){
-        data$orig <- data$dupl[input$dupl_rows_selected,]
+        if (input$calc_mode == 'exact'){
+        data$orig <- data$dupl[input$dupl_rows_selected,input$columns]
+                    print(data$orig)
       } else {
-            req(data$dupl_fuzzy, input$dupl_rows_selected)
-        data$orig <- data$dupl_fuzzy[input$dupl_rows_selected,]
-      }
+        req(data$dupl_fuzzy, input$dupl_rows_selected)
+        data$orig <- data$dupl_fuzzy[input$dupl_rows_selected,input$columns]
+        }
     }
-  }
-  data$displayed <- rhandsontable::rhandsontable(data$orig) %>%  hot_cols( columnSorting=TRUE)
-  hands_on_table <- rhandsontable::rhandsontable(data$orig) %>%  hot_cols( columnSorting=TRUE)
-  data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))
   })
 
-  #   observe({
-  #
-  #    print(input$hot)
-  #
-  #   if (!is.null(input$hot)){
-  #   data$orig <- rhandsontable::hot_to_r(input$hot)
-  #           } else {
-  #
-  #     if (input$tabs == 'data') {
-  #             if (input$data_source == 'historic'){
-  #                   data$orig <- data$hist[input$data_rows_selected,]
-  #             } else if (input$data_source == 'new') {
-  #                   data$orig <- data$new[input$data_rows_selected,]
-  #             } else if (input$data_source == 'all' | input$data_source == 'historic & new') {
-  #                 data$orig <- data$all[input$data_rows_selected,]
-  #             }
-  #
-  #     } else if (input$tabs == 'unique') {
-  #             data$orig <- data$unique[input$unique_rows_selected,]
-  #     } else if (input$tabs == 'duplicates') {
-  #           if (input$calc_mode == 'exact'){
-  #              data$orig <- data$dupl[input$dupl_rows_selected,]
-  #           } else {
-  #                 data$orig <- data$dupl_fuzzy[input$dupl_rows_selected,]
-  #           }
-  #     }
-  #   }
-  #
-  # data$displayed <- rhandsontable::rhandsontable(data$orig)
-  # hands_on_table <- rhandsontable::rhandsontable(data$orig)
-  # data$updated <- tibble::tibble(jsonlite::fromJSON(hands_on_table$x$data))
-  # })
-
-## this one worked!
-# observeEvent(input$final_edit, {
-#   new_data <- data$updated %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%m/%d/%Y")
-#   new_data <- new_data %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d")
-# data$new[input$data_rows_selected,] <- new_data
-# })
+    observeEvent(input$table,{
+  data$updated <- tibble::tibble(excel_to_R(input$table))
+      print(data$updated)
+  })
 
 observeEvent(input$final_edit, {
 
-  # two date formatting steps need for copatibility with r tibble and DT
-  new_data <- data$updated %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%m/%d/%Y")
-  new_data <- new_data %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%Y/%m/%d") %>% arrange(desc(ID_SMC))
+  new_data <- data$updated %>% arrange(desc(ID_SMC)) #%>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%d/%m/%Y")
 
   if (input$data_source == 'historic'){
       data$hist <- data$hist %>% arrange(desc(ID_SMC))
-      data$hist[data$hist$ID_SMC %in% data$updated$ID_SMC, ] <- new_data
+      data$hist[data$hist$ID_SMC %in% data$updated$ID_SMC, input$columns] <- new_data
   } else if (input$data_source == 'new') {
       data$new <- data$new %>% arrange(desc(ID_SMC))
-      data$new[data$new$ID_SMC %in% data$updated$ID_SMC, ] <- new_data
+      data$new[data$new$ID_SMC %in% data$updated$ID_SMC, input$columns] <- new_data
   } else if (input$data_source == 'all' | input$data_source == 'historic & new') {
 
       data$hist <- data$hist %>% arrange(desc(ID_SMC))
-      data$hist[data$hist$ID_SMC %in% data$updated$ID_SMC, ] <- new_data[data$updated$ID_SMC %in% data$hist$ID_SMC, ]
+      data$hist[data$hist$ID_SMC %in% data$updated$ID_SMC, input$columns] <- new_data[data$updated$ID_SMC %in% data$hist$ID_SMC, ]
 
       data$new <- data$new %>% arrange(desc(ID_SMC))
-      data$new[data$new$ID_SMC %in% data$updated$ID_SMC, ] <- new_data[data$updated$ID_SMC %in% data$new$ID_SMC, ]
+      data$new[data$new$ID_SMC %in% data$updated$ID_SMC, input$columns] <- new_data[data$updated$ID_SMC %in% data$new$ID_SMC, ]
 
       data$all <- data$all %>% arrange(desc(ID_SMC))
-      data$all[data$all$ID_SMC %in% data$updated$ID_SMC, ] <- new_data
+      data$all[data$all$ID_SMC %in% data$updated$ID_SMC, input$columns] <- new_data
   }
 
 })
 
-    # render outputs
-  output$hot_data <- rhandsontable::renderRHandsontable({
-    req(data$displayed)
-    return(data$displayed)
-  })
+observe({
+  columns <- data.frame(title = input$columns) # types = c('numeric', COLTYPES) )
+  output$table <- renderExcel(excelTable(data = data$orig, showToolbar = T, search=TRUE, columns = columns, autoFill = T, rowResize = T))
+})
 
-    output$hot_dupl <- rhandsontable::renderRHandsontable({
-    req(data$displayed)
-    return(data$displayed)
-  })
 
-    output$hot_rendered <- renderUI({
-      if (input$tabs == 'data') {
-          rHandsontableOutput("hot_data")
-      } else {
-          rHandsontableOutput("hot_dupl")
-      }
 
-    })
-    # output$hot <- renderRHandsontable({
-    #     rhandsontable(data$show[input$data_rows_selected,])
-    # })
+
+
 
   ### remove edit modal when close button is clicked or submit button
   shiny::observeEvent(input$dismiss_modal, {
