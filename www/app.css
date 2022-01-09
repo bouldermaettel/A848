@@ -125,9 +125,12 @@ input[type='radio']:checked {
   background-color: rgba(224, 0, 7, 1);
 }
 
-.modal-dialog { width: fit-content !important;
+.modal-dialog {
+    width: fit-content !important;
 }
-
+.modal-body{
+        height: fit-content !important;
+}
 
 /*.radio-item input[type=radio]:checked + label:after {*/
 /*  border-radius: 11px;*/

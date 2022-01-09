@@ -408,7 +408,9 @@ observeEvent(input$final_edit, {
 
 observe({
   columns <- data.frame(title = input$columns) # types = c('numeric', COLTYPES) )
-  output$table <- renderExcel(excelTable(data = data$orig, showToolbar = T, search=TRUE, columns = columns, autoFill = T, rowResize = T))
+  output$table <- renderExcel(excelTable(data = data$orig, showToolbar = T, search=TRUE, columns = columns,
+                                         autoFill = T, rowResize = T, allowInsertRow = F, allowInsertColumn = F,
+                                         allowDeleteRow = F, allowDeleteColumn = F))
 })
 
 

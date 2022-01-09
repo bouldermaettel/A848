@@ -39,7 +39,7 @@ data2[['row.names']] <- NULL
 # library(randomNames)
 # df <- readRDS('./data/data_test.rds')
 df <- df  %>% mutate_at(vars('ID_SMC', 'Nr', 'PLZ', 'n'),  as.integer)
-df$n <- NULL
+df <- df %>% mutate_at(vars('Datum_Eingang', 'Datum_Brief', 'Frist', 'Datum_Vernichtung', 'Stellungnahme'),  as.Date, format = "%d/%m/%Y")  %>% mutate_at(vars('Nr', 'PLZ'),  as.integer)
 head(df)
 saveRDS(df, './data/data_test.rds')
 
